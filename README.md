@@ -57,6 +57,16 @@ Visit the [Releases](https://github.com/faesel/gridwatch/releases) page and down
 - **macOS** — `.dmg` (arm64 or x64)
 - **Windows** — `.exe` (NSIS installer)
 
+#### macOS: "app cannot be verified" warning
+
+The app is not code-signed, so macOS Gatekeeper will block it on first launch. After dragging GridWatch to Applications, run:
+
+```bash
+xattr -cr /Applications/GridWatch.app
+```
+
+Then open GridWatch as normal. You only need to do this once.
+
 ### Build from source
 
 ```bash
