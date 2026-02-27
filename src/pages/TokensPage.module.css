@@ -155,3 +155,32 @@
   border-radius: 2px;
 }
 
+
+.rangeRow {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.rangeBtn {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.rangeBtn:hover {
+  color: var(--tron-cyan);
+  border-color: var(--tron-cyan);
+}
+
+.rangeBtnActive {
+  color: var(--tron-cyan);
+  border-color: var(--tron-cyan);
+  box-shadow: var(--tron-glow-cyan);
+}

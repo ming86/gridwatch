@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import type { SessionData } from '../types/session'
 import styles from './SessionsPage.module.css'
 
+const PAGE_SIZE = 20
+
 interface Props {
   sessions: SessionData[]
   onSessionRenamed: () => void
@@ -59,6 +61,7 @@ function basename(p: string): string {
 export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
@@ -144,6 +147,12 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     )
   })
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  // Reset to first page when search changes
+  useEffect(() => { setPage(0) }, [search])
+
   const totalCount = sessions.length
   const todayCount = sessions.filter((s) => isToday(s.createdAt)).length
   const uniqueRepos = new Set(sessions.map((s) => s.repository || s.cwd)).size
@@ -188,10 +197,10 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
           </div>
         </div>
         <div className={styles.cardList}>
-          {filtered.length === 0 && (
+          {paginated.length === 0 && (
             <div className={styles.empty}>NO SESSIONS FOUND</div>
           )}
-          {filtered.map((session) => {
+          {paginated.map((session) => {
             const status = getSessionStatus(session)
             const isActive = selectedSession?.id === session.id
             return (
@@ -234,6 +243,24 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             )
           })}
         </div>
+
+        {totalPages > 1 && (
+          <div className={styles.pagination}>
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+            >‹ PREV</button>
+            <span className={styles.pageInfo}>
+              {page + 1} / {totalPages}
+            </span>
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+            >NEXT ›</button>
+          </div>
+        )}
       </div>
 
       {/* Session detail */}

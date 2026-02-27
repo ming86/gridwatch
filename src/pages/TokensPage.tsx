@@ -47,8 +47,19 @@ const TooltipContent = ({ active, payload, label }: any) => {
 const basename = (path: string): string =>
   path.split('/').filter(Boolean).pop() || path
 
+type TimeRange = '1D' | '1W' | '1M' | 'ALL'
+
+function filterByRange<T extends { date: string }>(data: T[], range: TimeRange): T[] {
+  if (range === 'ALL') return data
+  const now = Date.now()
+  const ms = range === '1D' ? 86400000 : range === '1W' ? 604800000 : 2592000000
+  const cutoff = new Date(now - ms).toISOString().slice(0, 10)
+  return data.filter((d) => d.date >= cutoff)
+}
+
 export default function TokensPage({ sessions }: Props) {
   const [logTokens, setLogTokens] = useState<LogTokenEntry[]>([])
+  const [range, setRange] = useState<TimeRange>('1M')
 
   useEffect(() => {
     window.gridwatchAPI.getLogTokens().then(setLogTokens).catch(() => {})
@@ -71,9 +82,12 @@ export default function TokensPage({ sessions }: Props) {
       lineMap.set(entry.date, { tokens: entry.tokens, utilisation: entry.utilisation })
     }
   })
-  const lineData = Array.from(lineMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, { tokens, utilisation }]) => ({ date, tokens, util: utilisation }))
+  const lineData = filterByRange(
+    Array.from(lineMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, { tokens, utilisation }]) => ({ date, tokens, util: utilisation })),
+    range,
+  )
 
   // Bar chart: sum peakTokens per day from sessions
   const dailyMap = new Map<string, number>()
@@ -82,9 +96,12 @@ export default function TokensPage({ sessions }: Props) {
     const day = (s.createdAt ?? '').slice(0, 10)
     if (day) dailyMap.set(day, (dailyMap.get(day) || 0) + s.peakTokens)
   }
-  const barData = Array.from(dailyMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, tokens]) => ({ date, tokens }))
+  const barData = filterByRange(
+    Array.from(dailyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, tokens]) => ({ date, tokens })),
+    range,
+  )
 
   const hasData = lineData.length > 0 || barData.length > 0
 
@@ -109,6 +126,18 @@ export default function TokensPage({ sessions }: Props) {
 
       {!hasData && (
         <div className={styles.empty}>NO TOKEN DATA AVAILABLE</div>
+      )}
+
+      {hasData && (
+        <div className={styles.rangeRow}>
+          {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
+            <button
+              key={r}
+              className={`${styles.rangeBtn} ${range === r ? styles.rangeBtnActive : ''}`}
+              onClick={() => setRange(r)}
+            >{r}</button>
+          ))}
+        </div>
       )}
 
       {lineData.length > 0 && (

@@ -620,3 +620,40 @@
 .tagInput:focus {
   border-bottom-color: var(--tron-cyan);
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--tron-border);
+  flex-shrink: 0;
+}
+
+.pageBtn {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  color: var(--tron-cyan);
+  border-color: var(--tron-cyan);
+}
+
+.pageBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pageInfo {
+  font-size: 10px;
+  color: var(--tron-text-dim);
+  letter-spacing: 1px;
+}
