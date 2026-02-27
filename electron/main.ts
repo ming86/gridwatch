@@ -41,6 +41,7 @@ function createWindow() {
     height: 750,
     minWidth: 900,
     minHeight: 600,
+    show: false,
     frame: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 12 },
@@ -49,6 +50,8 @@ function createWindow() {
       contextIsolation: true,
     },
   })
+
+  win.once('ready-to-show', () => win?.show())
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
@@ -131,13 +134,12 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
 
-    const sessions: SessionData[] = []
-
-    for (const entry of entries) {
+    // Parse all sessions in parallel for faster I/O
+    const sessionPromises = entries.map((entry) => new Promise<SessionData | null>((resolve) => {
       try {
         const sessionDir = path.join(sessionStateDir, entry)
         const workspaceFile = path.join(sessionDir, 'workspace.yaml')
-        if (!fs.existsSync(workspaceFile)) continue
+        if (!fs.existsSync(workspaceFile)) return resolve(null)
 
         const yamlContent = fs.readFileSync(workspaceFile, 'utf-8')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -152,7 +154,7 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
           }
         }
 
-        // Parse events.jsonl
+        // Parse events.jsonl — only parse lines containing event types we care about
         let turnCount = 0
         const toolsUsed = new Set<string>()
         let copilotVersion: string | undefined
@@ -163,7 +165,7 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
         if (fs.existsSync(eventsFile)) {
           const eventsContent = fs.readFileSync(eventsFile, 'utf-8')
           for (const line of eventsContent.split('\n')) {
-            if (!line.trim()) continue
+            if (!line.includes('session.start') && !line.includes('user.message') && !line.includes('tool.execution_start')) continue
             try {
               const event = JSON.parse(line)
               if (event.type === 'session.start' && event.data?.copilotVersion) {
@@ -228,7 +230,7 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
           ? readLogTokenHistory(logDir, createdAt)
           : { tokenHistory: [], peakTokens: 0, peakUtilisation: 0 }
 
-        sessions.push({
+        resolve({
           id: workspace.id || entry,
           cwd: workspace.cwd || '',
           gitRoot: workspace.git_root || undefined,
@@ -260,10 +262,12 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
           tokenHistory,
         })
       } catch {
-        // skip bad session dirs
+        resolve(null)
       }
-    }
+    }))
 
+    const results = await Promise.all(sessionPromises)
+    const sessions = results.filter((s): s is SessionData => s !== null)
     sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     return sessions
   } catch {
