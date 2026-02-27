@@ -25,6 +25,8 @@ jobs:
 
       - name: Build & package (macOS)
         run: npm run pack:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS artifacts
         uses: softprops/action-gh-release@v2
@@ -47,6 +49,8 @@ jobs:
 
       - name: Build & package (Windows)
         run: npm run pack:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Windows artifacts
         uses: softprops/action-gh-release@v2
