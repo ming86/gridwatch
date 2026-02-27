@@ -1,0 +1,49 @@
+// @see - https://www.electron.build/configuration/configuration
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.faesel.gridwatch",
+  "asar": true,
+  "productName": "GridWatch",
+  "copyright": "Copyright © 2026 Faesel Saeed",
+  "icon": "build/icon.png",
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "dist",
+    "dist-electron"
+  ],
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["arm64", "x64"]
+      }
+    ],
+    "category": "public.app-category.developer-tools",
+    "artifactName": "${productName}-Mac-${version}-${arch}.${ext}",
+    "hardenedRuntime": false
+  },
+  "dmg": {
+    "title": "${productName} ${version}",
+    "background": null,
+    "window": { "width": 540, "height": 380 }
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false,
+    "installerIcon": "build/icon.png",
+    "uninstallerIcon": "build/icon.png"
+  }
+}

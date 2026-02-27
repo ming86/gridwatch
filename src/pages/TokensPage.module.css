@@ -1,0 +1,157 @@
+.page {
+  padding: 24px;
+}
+
+.pageTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tron-cyan);
+  text-shadow: var(--tron-glow-cyan);
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+}
+
+.statsRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.statCard {
+  background: var(--tron-panel);
+  border: 1px solid var(--tron-border);
+  padding: 14px 20px;
+  flex: 1;
+}
+
+.statValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tron-cyan);
+  text-shadow: var(--tron-glow-cyan);
+}
+
+.statLabel {
+  font-size: 10px;
+  color: var(--tron-text-dim);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.chartPanel {
+  background: var(--tron-panel);
+  border: 1px solid var(--tron-border);
+  padding: 20px;
+  margin-bottom: 16px;
+  background-image:
+    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.chartTitle {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--tron-text-dim);
+  margin-bottom: 16px;
+}
+
+.contextNote {
+  font-size: 10px;
+  color: var(--tron-text-dim);
+  letter-spacing: 1px;
+  margin-top: 8px;
+  text-align: right;
+}
+
+.empty {
+  text-align: center;
+  color: var(--tron-text-dim);
+  letter-spacing: 2px;
+  font-size: 12px;
+  padding: 40px;
+}
+
+/* ── Per-session token table ─────────────────── */
+.sessionTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.tableHeader {
+  border-bottom: 1px solid var(--tron-border);
+}
+
+.thLeft,
+.thRight,
+.thBar {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--tron-text-dim);
+  font-weight: 400;
+  padding: 6px 8px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.thRight {
+  text-align: right;
+}
+
+.thBar {
+  width: 120px;
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--tron-border);
+}
+
+.tableRow:hover {
+  background: rgba(0, 245, 255, 0.03) !important;
+}
+
+.tdSummary {
+  padding: 6px 8px;
+  color: var(--tron-text);
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tdRepo {
+  padding: 6px 8px;
+  color: var(--tron-text-dim);
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tdRight {
+  padding: 6px 8px;
+  color: var(--tron-cyan);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tdBar {
+  padding: 6px 8px;
+  width: 120px;
+}
+
+.miniBarTrack {
+  width: 100%;
+  height: 4px;
+  background: rgba(26, 42, 74, 0.5);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.miniBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f5ff, #0080ff);
+  border-radius: 2px;
+}
+

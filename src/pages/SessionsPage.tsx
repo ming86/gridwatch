@@ -1,0 +1,457 @@
+import { useState, useEffect } from 'react'
+import type { SessionData } from '../types/session'
+import styles from './SessionsPage.module.css'
+
+interface Props {
+  sessions: SessionData[]
+  onSessionRenamed: () => void
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const diffMs = now - then
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 60) return `${diffSec}s ago`
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  if (diffDay < 30) return `${diffDay} days ago`
+  const diffMo = Math.floor(diffDay / 30)
+  return `${diffMo}mo ago`
+}
+
+function formatDuration(start: string, end: string): string {
+  const diffMs = new Date(end).getTime() - new Date(start).getTime()
+  if (diffMs < 0) return '—'
+  const totalMin = Math.floor(diffMs / 60000)
+  const hours = Math.floor(totalMin / 60)
+  const mins = totalMin % 60
+  if (hours === 0) return `${mins}m`
+  return `${hours}h ${mins}m`
+}
+
+function getSessionStatus(session: SessionData): 'active' | 'today' | 'older' {
+  const now = Date.now()
+  const updated = new Date(session.updatedAt).getTime()
+  const diffHr = (now - updated) / 3600000
+  if (diffHr < 2) return 'active'
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  if (updated >= todayStart.getTime()) return 'today'
+  return 'older'
+}
+
+function isToday(dateStr: string): boolean {
+  const d = new Date(dateStr)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+}
+
+function basename(p: string): string {
+  return p ? p.split('/').pop() || p : ''
+}
+
+export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
+  const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
+  const [search, setSearch] = useState('')
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
+  const [confirm, setConfirm] = useState<'archive' | 'delete' | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [tagInput, setTagInput] = useState('')
+  const [localTags, setLocalTags] = useState<string[]>([])
+
+  // Sync localTags when selected session changes
+  useEffect(() => {
+    setLocalTags(selectedSession?.tags ?? [])
+    setTagInput('')
+  }, [selectedSession?.id])
+
+  const startRename = () => {
+    setRenameValue(selectedSession?.summary || '')
+    setIsRenaming(true)
+  }
+
+  const confirmRename = async () => {
+    if (!selectedSession || !renameValue.trim()) return
+    await window.gridwatchAPI.renameSession(selectedSession.id, renameValue.trim())
+    setIsRenaming(false)
+    onSessionRenamed()
+  }
+
+  const cancelRename = () => {
+    setIsRenaming(false)
+    setRenameValue('')
+  }
+
+  const addTag = async (tag: string) => {
+    const trimmed = tag.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!trimmed || !selectedSession || localTags.includes(trimmed)) return
+    const next = [...localTags, trimmed]
+    setLocalTags(next)
+    await window.gridwatchAPI.setTags(selectedSession.id, next)
+    onSessionRenamed()
+  }
+
+  const removeTag = async (tag: string) => {
+    if (!selectedSession) return
+    const next = localTags.filter((t) => t !== tag)
+    setLocalTags(next)
+    await window.gridwatchAPI.setTags(selectedSession.id, next)
+    onSessionRenamed()
+  }
+
+  const handleArchive = async () => {
+    if (!selectedSession) return
+    const result = await window.gridwatchAPI.archiveSession(selectedSession.id)
+    if (result.ok) {
+      setSelectedSession(null)
+      setConfirm(null)
+      onSessionRenamed()
+    } else {
+      setActionError(result.error || 'Archive failed')
+      setConfirm(null)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selectedSession) return
+    const result = await window.gridwatchAPI.deleteSession(selectedSession.id)
+    if (result.ok) {
+      setSelectedSession(null)
+      setConfirm(null)
+      onSessionRenamed()
+    } else {
+      setActionError(result.error || 'Delete failed')
+      setConfirm(null)
+    }
+  }
+
+  const filtered = sessions.filter((s) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      (s.summary || '').toLowerCase().includes(q) ||
+      (s.repository || '').toLowerCase().includes(q) ||
+      (s.cwd || '').toLowerCase().includes(q) ||
+      (s.branch || '').toLowerCase().includes(q) ||
+      (s.tags ?? []).some((t) => t.toLowerCase().includes(q))
+    )
+  })
+
+  const totalCount = sessions.length
+  const todayCount = sessions.filter((s) => isToday(s.createdAt)).length
+  const uniqueRepos = new Set(sessions.map((s) => s.repository || s.cwd)).size
+
+  const statusBadgeClass = (status: 'active' | 'today' | 'older') => {
+    if (status === 'active') return styles.badgeActive
+    if (status === 'today') return styles.badgeToday
+    return styles.badgeOlder
+  }
+
+  const statusLabel = (status: 'active' | 'today' | 'older') => {
+    if (status === 'active') return 'ACTIVE'
+    if (status === 'today') return 'TODAY'
+    return 'OLDER'
+  }
+
+  return (
+    <div className={styles.page}>
+      {/* Session list */}
+      <div className={`${styles.listColumn} ${!selectedSession ? styles.listColumnFull : ''}`}>
+        <div className={styles.searchWrap}>
+          <input
+            className={styles.searchInput}
+            type="text"
+            placeholder="SEARCH SESSIONS…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className={styles.statsRow}>
+          <div className={styles.stat}>
+            <div className={styles.statValue}>{totalCount}</div>
+            <div className={styles.statLabel}>TOTAL</div>
+          </div>
+          <div className={styles.stat}>
+            <div className={styles.statValue}>{todayCount}</div>
+            <div className={styles.statLabel}>TODAY</div>
+          </div>
+          <div className={styles.stat}>
+            <div className={styles.statValue}>{uniqueRepos}</div>
+            <div className={styles.statLabel}>REPOS</div>
+          </div>
+        </div>
+        <div className={styles.cardList}>
+          {filtered.length === 0 && (
+            <div className={styles.empty}>NO SESSIONS FOUND</div>
+          )}
+          {filtered.map((session) => {
+            const status = getSessionStatus(session)
+            const isActive = selectedSession?.id === session.id
+            return (
+              <div
+                key={session.id}
+                className={`${styles.card} ${isActive ? styles.cardActive : ''}`}
+                onClick={() => setSelectedSession(isActive ? null : session)}
+              >
+                <div className={styles.cardRow1}>
+                  <div className={styles.cardSummary}>
+                    {session.summary || session.lastUserMessage || 'UNTITLED SESSION'}
+                  </div>
+                  <span className={`${styles.badge} ${statusBadgeClass(status)}`}>
+                    {statusLabel(status)}
+                  </span>
+                </div>
+                <div className={styles.cardRow2}>
+                  {session.repository || basename(session.cwd)}
+                  {session.branch && (
+                    <> · <span className={styles.cardBranch}>{session.branch}</span></>
+                  )}
+                </div>
+                <div className={styles.cardRow3}>
+                  <span>{formatRelativeTime(session.updatedAt)}</span>
+                  <span>{session.turnCount} turns</span>
+                  {session.peakUtilisation > 0 && (
+                    <span className={styles.cardUtil}>
+                      {session.peakUtilisation.toFixed(1)}% ctx
+                    </span>
+                  )}
+                </div>
+                {(session.tags ?? []).length > 0 && (
+                  <div className={styles.cardTags}>
+                    {session.tags.map((t) => (
+                      <span key={t} className={styles.tagChip}>{t}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Session detail */}
+      {selectedSession && (
+        <div className={styles.detailColumn}>
+          <div className={styles.detailHeader}>
+            {isRenaming ? (
+              <div className={styles.renameRow}>
+                <input
+                  className={styles.renameInput}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmRename()
+                    if (e.key === 'Escape') cancelRename()
+                  }}
+                  autoFocus
+                />
+                <button className={styles.renameConfirm} onClick={confirmRename}>✓</button>
+                <button className={styles.renameCancel} onClick={cancelRename}>✕</button>
+              </div>
+            ) : (
+              <>
+                <div className={styles.detailSummary}>
+                  {selectedSession.summary || 'SESSION DETAIL'}
+                </div>
+                <div className={styles.detailActions}>
+                  <button className={styles.renameBtn} onClick={startRename} title="Rename session">✎</button>
+                  <button className={styles.archiveBtn} onClick={() => { setConfirm('archive'); setActionError(null) }} title="Archive session">⊟</button>
+                  <button className={styles.deleteBtn} onClick={() => { setConfirm('delete'); setActionError(null) }} title="Delete session">⊗</button>
+                  <button className={styles.closeBtn} onClick={() => setSelectedSession(null)}>×</button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Error banner */}
+          {actionError && (
+            <div className={styles.errorBanner}>
+              ⚠ {actionError}
+              <button className={styles.errorDismiss} onClick={() => setActionError(null)}>×</button>
+            </div>
+          )}
+
+          {/* Confirm action */}
+          {confirm && (
+            <div className={confirm === 'delete' ? styles.confirmDelete : styles.confirmArchive}>
+              <span>
+                {confirm === 'archive'
+                  ? '⊟ ARCHIVE this session? It will be moved to session-state-archived/'
+                  : '⊗ PERMANENTLY DELETE this session? This cannot be undone.'}
+              </span>
+              <div className={styles.confirmActions}>
+                <button
+                  className={confirm === 'delete' ? styles.confirmDeleteBtn : styles.confirmArchiveBtn}
+                  onClick={confirm === 'archive' ? handleArchive : handleDelete}
+                >
+                  CONFIRM
+                </button>
+                <button className={styles.confirmCancelBtn} onClick={() => setConfirm(null)}>
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Metadata */}
+          <div className={styles.metaGrid}>
+            <span className={styles.metaKey}>ID</span>
+            <span className={styles.metaVal}>{selectedSession.id.slice(0, 18)}…</span>
+
+            <span className={styles.metaKey}>WORKING DIR</span>
+            <span className={styles.metaVal}>{selectedSession.cwd}</span>
+
+            {selectedSession.repository && (
+              <>
+                <span className={styles.metaKey}>REPOSITORY</span>
+                <span className={styles.metaVal}>{selectedSession.repository}</span>
+              </>
+            )}
+            {selectedSession.branch && (
+              <>
+                <span className={styles.metaKey}>BRANCH</span>
+                <span className={styles.metaVal}>{selectedSession.branch}</span>
+              </>
+            )}
+
+            <span className={styles.metaKey}>CREATED</span>
+            <span className={styles.metaVal}>{new Date(selectedSession.createdAt).toLocaleString()}</span>
+
+            <span className={styles.metaKey}>LAST ACTIVE</span>
+            <span className={styles.metaVal}>{new Date(selectedSession.updatedAt).toLocaleString()}</span>
+
+            <span className={styles.metaKey}>DURATION</span>
+            <span className={styles.metaVal}>{formatDuration(selectedSession.createdAt, selectedSession.updatedAt)}</span>
+
+            {selectedSession.copilotVersion && (
+              <>
+                <span className={styles.metaKey}>COPILOT</span>
+                <span className={styles.metaVal}>{selectedSession.copilotVersion}</span>
+              </>
+            )}
+          </div>
+
+          {/* Tools */}
+          {selectedSession.toolsUsed.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>TOOLS USED</div>
+              <div className={styles.toolBadges}>
+                {selectedSession.toolsUsed.map((tool) => (
+                  <span key={tool} className={styles.toolBadge}>{tool}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Token bar */}
+          {selectedSession.peakUtilisation > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>
+                PEAK TOKEN UTILISATION — {selectedSession.peakUtilisation.toFixed(1)}%
+              </div>
+              <div className={styles.tokenBar}>
+                <div
+                  className={styles.tokenBarFill}
+                  style={{ width: `${Math.min(100, selectedSession.peakUtilisation)}%` }}
+                />
+                <span className={styles.tokenBarLabel}>
+                  {selectedSession.peakTokens.toLocaleString()} tokens
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>TAGS</div>
+            <div className={styles.tagsRow}>
+              {localTags.map((t) => (
+                <span key={t} className={styles.tagChipDetail}>
+                  {t}
+                  <button
+                    className={styles.tagRemove}
+                    onClick={() => removeTag(t)}
+                    aria-label={`Remove tag ${t}`}
+                  >×</button>
+                </span>
+              ))}
+              <input
+                className={styles.tagInput}
+                placeholder="+ add tag"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault()
+                    addTag(tagInput)
+                    setTagInput('')
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Prompt history from events.jsonl */}
+          {selectedSession.userMessages.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>
+                PROMPT HISTORY ({selectedSession.userMessages.length})
+              </div>
+              {[...selectedSession.userMessages].reverse().map((msg, i) => (
+                <div key={i} className={styles.rewindItem}>
+                  <div className={styles.rewindMsg}>{msg}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Rewind snapshots */}
+          {selectedSession.rewindSnapshots.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>
+                REWIND HISTORY ({selectedSession.rewindSnapshots.length})
+              </div>
+              {selectedSession.rewindSnapshots.map((snap) => (
+                <div key={snap.snapshotId} className={styles.rewindItem}>
+                  <div className={styles.rewindTime}>
+                    {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : '—'}
+                    {snap.gitBranch && ` · ${snap.gitBranch}`}
+                    {` · ${snap.fileCount} files`}
+                  </div>
+                  <div className={styles.rewindMsg}>{snap.userMessage}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Files modified */}
+          {selectedSession.filesModified.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>
+                FILES MODIFIED ({selectedSession.filesModified.length})
+              </div>
+              {selectedSession.filesModified.slice(0, 20).map((f, i) => (
+                <div key={i} className={styles.fileItem}>
+                  <span className={styles.fileName}>{basename(f)}</span>
+                  <span className={styles.filePath}> {f}</span>
+                </div>
+              ))}
+              {selectedSession.filesModified.length > 20 && (
+                <div className={styles.filePath}>
+                  + {selectedSession.filesModified.length - 20} more…
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

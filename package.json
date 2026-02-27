@@ -1,0 +1,51 @@
+{
+  "name": "gridwatch",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:debug": "GRIDWATCH_DEVTOOLS=1 vite",
+    "build": "tsc && vite build",
+    "pack:mac": "tsc && vite build && electron-builder --mac",
+    "pack:win": "tsc && vite build && electron-builder --win",
+    "pack:all": "tsc && vite build && electron-builder --mac --win",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "postinstall": "node scripts/patch-electron-name.cjs"
+  },
+  "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "js-yaml": "^4.1.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.3.2",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^30.0.1",
+    "electron-builder": "^24.13.3",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.6",
+    "vite-plugin-electron": "^0.28.6",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  },
+  "main": "dist-electron/main.js",
+  "license": "MIT",
+  "author": "Faesel Saeed",
+  "description": "A retro-Tron-themed desktop dashboard for monitoring your GitHub Copilot CLI sessions",
+  "homepage": "https://github.com/faesel/gridwatch",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faesel/gridwatch.git"
+  }
+}
