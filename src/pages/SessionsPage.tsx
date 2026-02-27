@@ -61,6 +61,8 @@ function basename(p: string): string {
 export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
   const [search, setSearch] = useState('')
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
+  const [showTagFilter, setShowTagFilter] = useState(false)
   const [page, setPage] = useState(0)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
@@ -135,7 +137,30 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     }
   }
 
+  // Collect all unique tags across sessions
+  const allTags = Array.from(
+    new Set(sessions.flatMap((s) => s.tags ?? []))
+  ).sort()
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => {
+      const next = new Set(prev)
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
+      return next
+    })
+  }
+
+  const clearTagFilter = () => setSelectedTags(new Set())
+
   const filtered = sessions.filter((s) => {
+    // Tag filter: session must have ALL selected tags
+    if (selectedTags.size > 0) {
+      const sessionTags = s.tags ?? []
+      for (const tag of selectedTags) {
+        if (!sessionTags.includes(tag)) return false
+      }
+    }
     if (!search) return true
     const q = search.toLowerCase()
     return (
@@ -150,8 +175,8 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-  // Reset to first page when search changes
-  useEffect(() => { setPage(0) }, [search])
+  // Reset to first page when search or tag filter changes
+  useEffect(() => { setPage(0) }, [search, selectedTags])
 
   const totalCount = sessions.length
   const todayCount = sessions.filter((s) => isToday(s.createdAt)).length
@@ -181,7 +206,36 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {allTags.length > 0 && (
+            <button
+              className={`${styles.tagFilterToggle} ${selectedTags.size > 0 ? styles.tagFilterActive : ''}`}
+              onClick={() => setShowTagFilter((v) => !v)}
+              aria-expanded={showTagFilter}
+              aria-label="Filter by tags"
+            >
+              ⊞ TAGS{selectedTags.size > 0 ? ` (${selectedTags.size})` : ''}
+            </button>
+          )}
         </div>
+        {showTagFilter && allTags.length > 0 && (
+          <div className={styles.tagFilterPanel}>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                className={`${styles.tagFilterChip} ${selectedTags.has(tag) ? styles.tagFilterChipSelected : ''}`}
+                onClick={() => toggleTag(tag)}
+                aria-pressed={selectedTags.has(tag)}
+              >
+                {selectedTags.has(tag) ? '☑ ' : '☐ '}{tag}
+              </button>
+            ))}
+            {selectedTags.size > 0 && (
+              <button className={styles.tagFilterClear} onClick={clearTagFilter}>
+                CLEAR
+              </button>
+            )}
+          </div>
+        )}
         <div className={styles.statsRow}>
           <div className={styles.stat}>
             <div className={styles.statValue}>{totalCount}</div>
