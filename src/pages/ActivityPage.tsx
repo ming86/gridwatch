@@ -57,12 +57,16 @@ function getCellShadow(count: number): string | undefined {
 function buildHeatmapCells(): Date[] {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  // go back to the Monday of the week 52 weeks ago
-  const start = new Date(today)
-  start.setDate(start.getDate() - 363)
-  const dow = start.getDay() // 0=Sun
+
+  // Find the Monday of the current week so the grid always ends with today's week
+  const dow = today.getDay() // 0=Sun
   const daysToMon = dow === 0 ? 6 : dow - 1
-  start.setDate(start.getDate() - daysToMon)
+  const currentMonday = new Date(today)
+  currentMonday.setDate(today.getDate() - daysToMon)
+
+  // Start exactly 51 weeks before so the grid spans 52 weeks ending this week
+  const start = new Date(currentMonday)
+  start.setDate(start.getDate() - 51 * 7)
 
   const cells: Date[] = []
   const cur = new Date(start)
