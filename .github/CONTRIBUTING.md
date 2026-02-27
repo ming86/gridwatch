@@ -94,7 +94,7 @@ See the project structure in [README.md](../README.md) to understand where thing
 
 ## Reporting bugs
 
-Use the [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) template. Please include:
+Use the [Bug Report](https://github.com/faesel/gridwatch/issues/new?template=bug_report.md) template. Please include:
 
 - Your OS and version
 - GridWatch version
@@ -106,7 +106,7 @@ Use the [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) template. Please incl
 
 ## Requesting features
 
-Open a [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) issue. Describe:
+Open a [Feature Request](https://github.com/faesel/gridwatch/issues/new?template=feature_request.md) issue. Describe:
 
 - The problem you're trying to solve
 - Your proposed solution

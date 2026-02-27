@@ -9,12 +9,15 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 ## Features
 
 - **Sessions overview** — browse all Copilot CLI sessions with live status, turn counts, token utilisation, and last prompt
+- **Search & tag filtering** — full-text search across sessions plus multi-select tag filtering with checkable tag chips
+- **Pagination** — sessions list paged at 20 per page for fast loading
 - **Prompt history** — read every user message from a session's `events.jsonl` directly in the UI
-- **Token usage graphs** — line and bar charts tracking peak context window usage over time
+- **Token usage graphs** — line and bar charts tracking peak context window usage over time with 1D / 1W / 1M / ALL time range filters
 - **Activity heatmap** — GitHub-style contribution grid showing your session activity over 52 weeks
-- **Tagging** — add, remove, and search sessions by custom tags
+- **Tagging** — add, remove, and filter sessions by custom tags
 - **Rename sessions** — give sessions a meaningful name beyond the auto-generated summary
 - **Archive / Delete** — safely archive or permanently remove old sessions (guards against deleting active sessions)
+- **Update notifications** — automatically checks GitHub Releases for new versions and shows a download banner
 - **Settings** — adjustable UI scale, font size, and density presets, persisted between launches
 - **Auto-refresh** — dashboard refreshes every 30 seconds automatically
 - **Retro Tron theme** — neon cyan, electric blue, and orange accents on near-black backgrounds with JetBrains Mono typography
@@ -114,6 +117,9 @@ gridwatch/
 ```bash
 npm run dev          # Start development server with hot reload
 npm run dev:debug    # Start with DevTools open (useful for debugging)
+npm run build        # Type-check and build (clean first)
+npm run clean        # Remove dist and dist-electron directories
+npm run lint         # Run ESLint across the project
 npm run pack:mac     # Build and package for macOS (creates .dmg files)
 npm run pack:win     # Build and package for Windows (creates .exe installer)
 npm run pack:all     # Build for all platforms
@@ -121,7 +127,7 @@ npm run pack:all     # Build for all platforms
 
 ### Data sources
 
-GridWatch reads exclusively from local files — no network requests are made.
+GridWatch reads exclusively from local files — no network requests are made except to check for updates.
 
 | Data | Source |
 |---|---|
@@ -130,6 +136,7 @@ GridWatch reads exclusively from local files — no network requests are made.
 | Rewind snapshots | `~/.copilot/session-state/<uuid>/rewind-snapshots/index.json` |
 | Token usage | `~/.copilot/logs/process-<timestamp>-<pid>.log` |
 | Session tags / custom data | `~/.copilot/session-state/<uuid>/gridwatch.json` (written by GridWatch) |
+| Update check | `api.github.com/repos/faesel/gridwatch/releases/latest` (on startup only) |
 
 ### Tech stack
 
@@ -181,9 +188,11 @@ git tag "v$VERSION" && git push origin "v$VERSION"
 
 The release workflow will:
 1. Create a GitHub Release with auto-generated release notes
-2. Build a signed `.dmg` for macOS (arm64 + x64) in parallel
+2. Build a `.dmg` for macOS (arm64 + x64) in parallel
 3. Build an `.exe` NSIS installer for Windows (x64) in parallel
 4. Upload both artifacts to the release
+
+> **Note:** The macOS build is currently unsigned. See the [installation section](#macos-app-cannot-be-verified-warning) for the Gatekeeper workaround.
 
 ---
 
