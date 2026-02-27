@@ -5,6 +5,7 @@
 
 const fs = require('fs')
 const path = require('path')
+const { execSync } = require('child_process')
 
 const plistPath = path.join(
   __dirname,
@@ -27,3 +28,16 @@ content = content.replace(
 )
 fs.writeFileSync(plistPath, content, 'utf-8')
 console.log('patch-electron-name: Electron Info.plist patched → GridWatch')
+
+// Flush macOS Launch Services cache so the dock picks up the new name immediately
+try {
+  execSync(
+    '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister' +
+    ' -kill -r -domain local -domain system -domain user',
+    { stdio: 'ignore' },
+  )
+  execSync('killall Dock', { stdio: 'ignore' })
+  console.log('patch-electron-name: Launch Services cache flushed, Dock restarted')
+} catch {
+  // Non-macOS or permission issue — safe to ignore
+}
