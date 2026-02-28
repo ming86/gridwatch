@@ -254,6 +254,13 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
         }
 
         const createdAt: string = new Date(workspace.created_at || workspace.createdAt || Date.now()).toISOString()
+        let updatedAt: string = new Date(workspace.updated_at || workspace.updatedAt || createdAt).toISOString()
+
+        // Use events.jsonl mtime if newer — workspace.yaml updated_at can be stale
+        const evtsMtime = fs.existsSync(eventsFile) ? fs.statSync(eventsFile).mtime : null
+        if (evtsMtime && evtsMtime.getTime() > new Date(updatedAt).getTime()) {
+          updatedAt = evtsMtime.toISOString()
+        }
 
         // Token history from log
         const { tokenHistory, peakTokens, peakUtilisation } = fs.existsSync(logDir)
@@ -269,7 +276,7 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
           summary: workspace.summary || undefined,
           summaryCount: parseInt(workspace.summary_count || workspace.summaryCount || '0', 10) || 0,
           createdAt,
-          updatedAt: new Date(workspace.updated_at || workspace.updatedAt || createdAt).toISOString(),
+          updatedAt,
           turnCount,
           toolsUsed: Array.from(toolsUsed),
           copilotVersion,

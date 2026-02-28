@@ -548,7 +548,10 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
           {/* Transferred context files */}
           {transfers.length > 0 && (
             <div className={styles.section}>
-              <div className={styles.sectionTitle}>TRANSFERRED CONTEXT ({transfers.length})</div>
+              <div className={styles.sectionTitle}>
+                TRANSFERRED CONTEXT ({transfers.length})
+                <span className={styles.infoTip} data-tip="Context files transferred from other sessions via the Transfer page. These contain plans, notes, and AI-generated summaries to help prime new sessions.">ⓘ</span>
+              </div>
               {transfers.map((t) => (
                 <div key={t.name} className={styles.transferItem}>
                   <div className={styles.transferHeader}>
@@ -585,6 +588,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             <div className={styles.section}>
               <div className={styles.sectionTitle}>
                 PROMPT HISTORY ({selectedSession.userMessages.length})
+                <span className={styles.infoTip} data-tip="Every message you typed in this session, parsed from events.jsonl. Shown newest first.">ⓘ</span>
               </div>
               {[...selectedSession.userMessages].reverse().map((msg, i) => (
                 <div key={i} className={styles.rewindItem}>
@@ -599,6 +603,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             <div className={styles.section}>
               <div className={styles.sectionTitle}>
                 REWIND HISTORY ({selectedSession.rewindSnapshots.length})
+                <span className={styles.infoTip} data-tip="Checkpoint snapshots saved by Copilot CLI at key moments. Each captures the workspace state (files, branch) so you can rewind to that point.">ⓘ</span>
               </div>
               {selectedSession.rewindSnapshots.map((snap) => (
                 <div key={snap.snapshotId} className={styles.rewindItem}>
