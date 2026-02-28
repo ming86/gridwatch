@@ -7,6 +7,7 @@ import SessionsPage from './pages/SessionsPage'
 import TokensPage from './pages/TokensPage'
 import ActivityPage from './pages/ActivityPage'
 import SettingsPage, { loadSettings, applySettings } from './pages/SettingsPage'
+import InsightsPage from './pages/InsightsPage'
 import type { AppSettings } from './pages/SettingsPage'
 
 // Error boundary to catch render errors in page components
@@ -39,6 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'sessions', label: 'SESSIONS', icon: '◈' },
   { id: 'tokens', label: 'TOKENS', icon: '◬' },
   { id: 'activity', label: 'ACTIVITY', icon: '◫' },
+  { id: 'insights', label: 'INSIGHTS', icon: '⚡' },
   { id: 'settings', label: 'SETTINGS', icon: '⚙' },
 ]
 
@@ -83,6 +85,7 @@ function App() {
       case 'sessions': return <SessionsPage sessions={sessions} onSessionRenamed={load} />
       case 'tokens': return <TokensPage sessions={sessions} />
       case 'activity': return <ActivityPage sessions={sessions} />
+      case 'insights': return <InsightsPage sessions={sessions} />
       case 'settings': return <SettingsPage settings={appSettings} onChange={setAppSettings} />
       default: return null
     }

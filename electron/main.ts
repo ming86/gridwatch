@@ -481,6 +481,90 @@ ipcMain.handle('app:open-external', async (_e, url: string) => {
   await shell.openExternal(url)
 })
 
+// ── IPC: insights:analyse ──────────────────────────────────────────────────
+
+const INSIGHTS_SYSTEM_PROMPT = `You are an expert prompt engineering coach. You analyse prompts sent to GitHub Copilot CLI and provide actionable feedback.
+
+You will receive an array of user messages from a single Copilot CLI session. Evaluate each prompt and the session overall.
+
+Respond with ONLY valid JSON (no markdown fencing) in this exact structure:
+{
+  "overallScore": <1-10 integer>,
+  "summary": "<2-3 sentence overall assessment>",
+  "promptFeedback": [
+    { "prompt": "<first 80 chars of the prompt>", "score": <1-10>, "feedback": "<1-2 sentence tip>" }
+  ],
+  "suggestions": ["<general tip 1>", "<general tip 2>", "<general tip 3>"]
+}
+
+Scoring guide:
+- 9-10: Excellent — specific, includes context (file paths, errors, expected behaviour), right scope
+- 7-8: Good — clear intent but could be more specific or include more context
+- 5-6: Average — vague or overly broad, missing important context
+- 3-4: Weak — ambiguous, could be interpreted multiple ways
+- 1-2: Poor — single word or completely unclear
+
+Focus on:
+1. Specificity — does the prompt tell Copilot exactly what to do?
+2. Context — are file paths, error messages, or constraints provided?
+3. Scope — is the request appropriately sized (not too broad, not too trivial)?
+4. Efficiency — could fewer turns achieve the same result?
+5. Clarity — would another developer understand the intent?
+
+Keep feedback concise and actionable. Max 5 suggestions.`
+
+ipcMain.handle(
+  'insights:analyse',
+  async (_e, apiKey: string, messages: string[]) => {
+    return new Promise((resolve, reject) => {
+      const body = JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: INSIGHTS_SYSTEM_PROMPT },
+          { role: 'user', content: `Here are the user prompts from this session:\n\n${messages.map((m, i) => `${i + 1}. ${m}`).join('\n\n')}` },
+        ],
+        temperature: 0.3,
+        max_tokens: 2000,
+      })
+
+      const req = https.request(
+        {
+          hostname: 'api.openai.com',
+          path: '/v1/chat/completions',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+        },
+        (res) => {
+          let data = ''
+          res.on('data', (chunk: Buffer) => { data += chunk.toString() })
+          res.on('end', () => {
+            try {
+              const json = JSON.parse(data)
+              if (json.error) {
+                reject(new Error(json.error.message || 'OpenAI API error'))
+                return
+              }
+              const content = json.choices?.[0]?.message?.content || ''
+              // Strip markdown code fences if present
+              const cleaned = content.replace(/^```(?:json)?\n?/g, '').replace(/\n?```$/g, '').trim()
+              const result = JSON.parse(cleaned)
+              resolve(result)
+            } catch (err) {
+              reject(new Error(`Failed to parse OpenAI response: ${(err as Error).message}`))
+            }
+          })
+        },
+      )
+      req.on('error', (err) => reject(new Error(`OpenAI request failed: ${err.message}`)))
+      req.write(body)
+      req.end()
+    })
+  },
+)
+
 app.whenReady().then(() => {
   // Set macOS dock icon (BrowserWindow icon prop is ignored on macOS)
   if (process.platform === 'darwin' && app.dock) {

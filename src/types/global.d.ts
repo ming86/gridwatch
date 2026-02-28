@@ -1,5 +1,18 @@
 import type { SessionData } from './session';
 
+export interface PromptFeedback {
+  prompt: string;
+  score: number;
+  feedback: string;
+}
+
+export interface InsightResult {
+  overallScore: number;
+  summary: string;
+  promptFeedback: PromptFeedback[];
+  suggestions: string[];
+}
+
 declare global {
   interface Window {
     gridwatchAPI: {
@@ -13,6 +26,7 @@ declare global {
       getZoomFactor: () => number;
       checkForUpdate: () => Promise<{ hasUpdate: boolean; latestVersion?: string; downloadUrl?: string }>;
       openExternal: (url: string) => Promise<void>;
+      analyseSession: (apiKey: string, messages: string[]) => Promise<InsightResult>;
     };
   }
   const __APP_VERSION__: string;

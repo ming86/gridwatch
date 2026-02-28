@@ -35,4 +35,6 @@ contextBridge.exposeInMainWorld('gridwatchAPI', {
   getZoomFactor: () => webFrame.getZoomFactor(),
   checkForUpdate: () => ipcRenderer.invoke('app:check-for-update'),
   openExternal: (url: string) => ipcRenderer.invoke('app:open-external', url),
+  analyseSession: (apiKey: string, messages: string[]) =>
+    ipcRenderer.invoke('insights:analyse', apiKey, messages),
 })

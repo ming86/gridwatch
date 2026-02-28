@@ -153,3 +153,72 @@
 .themeIcon { font-size: 24px; }
 .themeLabel { font-size: 11px; font-weight: 700; letter-spacing: 2px; }
 .themeSub { font-size: 10px; opacity: 0.6; letter-spacing: 1px; }
+
+/* ── API Key ──────────────────────────────────── */
+.apiKeyRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.apiKeyInput {
+  flex: 1;
+  background: var(--tron-bg);
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  letter-spacing: 1px;
+  transition: border-color 0.2s;
+}
+
+.apiKeyInput:focus {
+  border-color: var(--tron-cyan);
+}
+
+.apiKeyInput::placeholder {
+  color: var(--tron-text-dim);
+}
+
+.apiKeyToggle {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 10px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.apiKeyToggle:hover {
+  border-color: var(--tron-cyan);
+  color: var(--tron-cyan);
+}
+
+.apiKeyClear {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.apiKeyClear:hover {
+  border-color: var(--tron-orange);
+  color: var(--tron-orange);
+}
+
+.apiKeyStatus {
+  margin-top: 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--tron-cyan);
+}

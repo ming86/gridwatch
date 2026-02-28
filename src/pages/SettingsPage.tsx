@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './SettingsPage.module.css'
 
 export interface AppSettings {
@@ -15,6 +16,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
 }
 
 const STORAGE_KEY = 'gridwatch-settings'
+const API_KEY_STORAGE_KEY = 'gridwatch-openai-key'
+
+export function loadApiKey(): string {
+  try { return localStorage.getItem(API_KEY_STORAGE_KEY) || '' } catch { return '' }
+}
+
+export function saveApiKey(key: string): void {
+  if (key) localStorage.setItem(API_KEY_STORAGE_KEY, key)
+  else localStorage.removeItem(API_KEY_STORAGE_KEY)
+}
 
 export function loadSettings(): AppSettings {
   try {
@@ -71,6 +82,9 @@ interface Props {
 }
 
 export default function SettingsPage({ settings, onChange }: Props) {
+  const [apiKey, setApiKey] = useState(() => loadApiKey())
+  const [showKey, setShowKey] = useState(false)
+
   const update = (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch }
     onChange(next)
@@ -171,6 +185,44 @@ export default function SettingsPage({ settings, onChange }: Props) {
             <span className={styles.themeSub}>Red / Crimson</span>
           </button>
         </div>
+      </div>
+
+      {/* OpenAI API Key */}
+      <div className={styles.panel}>
+        <div className={styles.sectionTitle}>OPENAI API KEY</div>
+        <div className={styles.description}>
+          Required for the Insights tab. Your key is stored locally and only sent to OpenAI.
+        </div>
+        <div className={styles.apiKeyRow}>
+          <input
+            className={styles.apiKeyInput}
+            type={showKey ? 'text' : 'password'}
+            placeholder="sk-..."
+            value={apiKey}
+            onChange={(e) => {
+              setApiKey(e.target.value)
+              saveApiKey(e.target.value)
+            }}
+            spellCheck={false}
+            autoComplete="off"
+          />
+          <button
+            className={styles.apiKeyToggle}
+            onClick={() => setShowKey((v) => !v)}
+            aria-label={showKey ? 'Hide key' : 'Show key'}
+          >
+            {showKey ? '◉' : '◎'}
+          </button>
+          {apiKey && (
+            <button
+              className={styles.apiKeyClear}
+              onClick={() => { setApiKey(''); saveApiKey('') }}
+            >
+              CLEAR
+            </button>
+          )}
+        </div>
+        {apiKey && <div className={styles.apiKeyStatus}>✓ KEY SAVED</div>}
       </div>
 
       {/* Reset */}

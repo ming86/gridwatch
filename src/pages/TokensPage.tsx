@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -89,21 +87,7 @@ export default function TokensPage({ sessions }: Props) {
     range,
   )
 
-  // Bar chart: sum peakTokens per day from sessions
-  const dailyMap = new Map<string, number>()
-  for (const s of sessions) {
-    if (!s.peakTokens) continue
-    const day = (s.createdAt ?? '').slice(0, 10)
-    if (day) dailyMap.set(day, (dailyMap.get(day) || 0) + s.peakTokens)
-  }
-  const barData = filterByRange(
-    Array.from(dailyMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, tokens]) => ({ date, tokens })),
-    range,
-  )
-
-  const hasData = lineData.length > 0 || barData.length > 0
+  const hasData = lineData.length > 0
 
   return (
     <div className={styles.page}>
@@ -159,22 +143,6 @@ export default function TokensPage({ sessions }: Props) {
                 activeDot={{ r: 5 }}
               />
             </LineChart>
-          </ResponsiveContainer>
-          <div className={styles.contextNote}>Context window: 128,000 tokens</div>
-        </div>
-      )}
-
-      {barData.length > 0 && (
-        <div className={styles.chartPanel}>
-          <div className={styles.chartTitle}>DAILY TOKEN AGGREGATE</div>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={barData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid stroke="#1a2a4a" strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fill: '#4a7a9b', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#4a7a9b', fontSize: 10 }} />
-              <Tooltip content={<TooltipContent />} />
-              <Bar dataKey="tokens" name="Tokens" fill="#0080ff" fillOpacity={0.8} />
-            </BarChart>
           </ResponsiveContainer>
           <div className={styles.contextNote}>Context window: 128,000 tokens</div>
         </div>
