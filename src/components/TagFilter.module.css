@@ -1,0 +1,79 @@
+.tagFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.tagFilterToggle {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  font-family: inherit;
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tagFilterToggle:hover {
+  border-color: var(--tron-cyan);
+  color: var(--tron-cyan);
+}
+
+.tagFilterActive {
+  border-color: var(--tron-orange);
+  color: var(--tron-orange);
+}
+
+.tagFilterPanel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 0;
+}
+
+.tagFilterChip {
+  background: rgba(0, 245, 255, 0.05);
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  font-family: inherit;
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 2px;
+}
+
+.tagFilterChip:hover {
+  border-color: var(--tron-cyan);
+  color: var(--tron-cyan);
+}
+
+.tagFilterChipSelected {
+  background: rgba(0, 245, 255, 0.15);
+  border-color: var(--tron-cyan);
+  color: var(--tron-cyan);
+  text-shadow: var(--tron-glow-cyan);
+}
+
+.tagFilterClear {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  font-family: inherit;
+  font-size: calc(9 * var(--font-scale, 1) * 1px);
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+
+.tagFilterClear:hover {
+  border-color: var(--tron-orange);
+  color: var(--tron-orange);
+}

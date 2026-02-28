@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { SessionData } from '../types/session'
+import TagFilter, { filterByTags } from '../components/TagFilter'
 import styles from './ActivityPage.module.css'
 
 interface Props {
@@ -85,31 +86,34 @@ interface HeatmapTooltipState {
 
 export default function ActivityPage({ sessions }: Props) {
   const [tooltip, setTooltip] = useState<HeatmapTooltipState | null>(null)
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
+
+  const filtered = filterByTags(sessions, selectedTags)
 
   // ── Session count by day ──────────────────────────────────
   const sessionCountByDay = new Map<string, number>()
-  for (const s of sessions) {
+  for (const s of filtered) {
     const day = (s.createdAt ?? '').slice(0, 10)
     if (day) sessionCountByDay.set(day, (sessionCountByDay.get(day) || 0) + 1)
   }
 
   // ── Repo map ──────────────────────────────────────────────
   const repoMap = new Map<string, number>()
-  for (const s of sessions) {
+  for (const s of filtered) {
     const name = s.repository || basename(s.cwd || '')
     if (name) repoMap.set(name, (repoMap.get(name) || 0) + 1)
   }
 
   // ── Tool map ──────────────────────────────────────────────
   const toolMap = new Map<string, number>()
-  for (const s of sessions) {
+  for (const s of filtered) {
     for (const tool of (s.toolsUsed ?? [])) {
       toolMap.set(tool, (toolMap.get(tool) || 0) + 1)
     }
   }
 
   // ── Stats ─────────────────────────────────────────────────
-  const totalSessions = sessions.length
+  const totalSessions = filtered.length
   const activeDays = sessionCountByDay.size
   const [favRepo = '—'] = [...repoMap.entries()].sort(([, a], [, b]) => b - a).map(([k]) => k)
   const [favTool = '—'] = [...toolMap.entries()].sort(([, a], [, b]) => b - a).map(([k]) => k)
@@ -138,7 +142,7 @@ export default function ActivityPage({ sessions }: Props) {
 
   // ── Day of week chart ─────────────────────────────────────
   const dayCountMap = new Map<number, number>()
-  for (const s of sessions) {
+  for (const s of filtered) {
     const d = new Date(s.createdAt ?? Date.now())
     if (isNaN(d.getTime())) continue
     const day = (d.getDay() + 6) % 7 // 0=Mon…6=Sun
@@ -149,6 +153,7 @@ export default function ActivityPage({ sessions }: Props) {
   return (
     <div className={styles.page}>
       <div className={styles.pageTitle}>ACTIVITY</div>
+      <TagFilter sessions={sessions} selectedTags={selectedTags} onChange={setSelectedTags} />
 
       {/* ── Stats bar ─────────────────────────── */}
       <div className={styles.statsRow}>

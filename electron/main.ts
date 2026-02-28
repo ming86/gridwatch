@@ -388,7 +388,12 @@ ipcMain.handle('sessions:rename', async (_event, sessionId: string, newSummary: 
     if (!fs.existsSync(yamlPath)) return false
 
     const raw = fs.readFileSync(yamlPath, 'utf-8')
-    const updated = raw.replace(/^summary:.*$/m, `summary: ${newSummary}`)
+    let updated: string
+    if (/^summary:.*$/m.test(raw)) {
+      updated = raw.replace(/^summary:.*$/m, `summary: ${newSummary}`)
+    } else {
+      updated = raw.trimEnd() + `\nsummary: ${newSummary}\n`
+    }
     fs.writeFileSync(yamlPath, updated, 'utf-8')
     return true
   } catch {

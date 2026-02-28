@@ -89,6 +89,14 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     }
   }, [selectedSession?.id])
 
+  // Keep selectedSession in sync when sessions prop updates (e.g. after rename)
+  useEffect(() => {
+    if (selectedSession) {
+      const updated = sessions.find(s => s.id === selectedSession.id)
+      if (updated && updated !== selectedSession) setSelectedSession(updated)
+    }
+  }, [sessions])
+
   const startRename = () => {
     setRenameValue(selectedSession?.summary || '')
     setIsRenaming(true)

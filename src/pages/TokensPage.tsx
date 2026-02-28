@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { SessionData } from '../types/session'
+import TagFilter, { filterByTags } from '../components/TagFilter'
 import styles from './TokensPage.module.css'
 
 interface Props {
@@ -58,12 +59,14 @@ function filterByRange<T extends { date: string }>(data: T[], range: TimeRange):
 export default function TokensPage({ sessions }: Props) {
   const [logTokens, setLogTokens] = useState<LogTokenEntry[]>([])
   const [range, setRange] = useState<TimeRange>('1M')
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     window.gridwatchAPI.getLogTokens().then(setLogTokens).catch(() => {})
   }, [])
 
-  const sessionsWithData = sessions.filter((s) => s.peakTokens > 0)
+  const filtered = filterByTags(sessions, selectedTags)
+  const sessionsWithData = filtered.filter((s) => s.peakTokens > 0)
   const avgUtilisation = sessionsWithData.length > 0
     ? sessionsWithData.reduce((sum, s) => sum + s.peakUtilisation, 0) / sessionsWithData.length
     : 0
@@ -92,6 +95,7 @@ export default function TokensPage({ sessions }: Props) {
   return (
     <div className={styles.page}>
       <div className={styles.pageTitle}>TOKEN USAGE</div>
+      <TagFilter sessions={sessions} selectedTags={selectedTags} onChange={setSelectedTags} />
 
       <div className={styles.statsRow}>
         <div className={styles.statCard}>

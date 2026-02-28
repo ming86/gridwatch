@@ -91,6 +91,26 @@
   font-size: calc(10 * var(--font-scale, 1) * 1px);
   color: var(--tron-text-dim);
   letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.refreshBtn {
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  font-size: calc(14 * var(--font-scale, 1) * 1px);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.refreshBtn:hover {
+  color: var(--tron-cyan);
+  border-color: var(--tron-cyan);
 }
 
 .loading {
