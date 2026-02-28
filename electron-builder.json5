@@ -22,7 +22,7 @@
     ],
     "category": "public.app-category.developer-tools",
     "artifactName": "${productName}-Mac-${version}-${arch}.${ext}",
-    "hardenedRuntime": false
+    "hardenedRuntime": true
   },
   "dmg": {
     "title": "${productName} ${version}",

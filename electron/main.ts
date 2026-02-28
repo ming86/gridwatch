@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, shell, safeStorage } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -48,10 +48,24 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
+      sandbox: true,
     },
   })
 
   win.once('ready-to-show', () => win?.show())
+
+  // Set Content Security Policy
+  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const csp = VITE_DEV_SERVER_URL
+      ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: https://api.github.com https://models.inference.ai.azure.com; img-src 'self' data:; font-src 'self' data:"
+      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.github.com https://models.inference.ai.azure.com; img-src 'self' data:; font-src 'self' data:"
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp],
+      },
+    })
+  })
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
@@ -62,6 +76,22 @@ function createWindow() {
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
 }
+
+// ── Security helpers ──────────────────────────────────────────────────────────
+
+const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isValidSessionId(id: string): boolean {
+  return typeof id === 'string' && SESSION_ID_PATTERN.test(id)
+}
+
+function isPathWithin(filePath: string, parentDir: string): boolean {
+  const resolved = path.resolve(filePath)
+  const parent = path.resolve(parentDir)
+  return resolved.startsWith(parent + path.sep) || resolved === parent
+}
+
+const MAX_TRANSFER_SIZE = 1_048_576 // 1 MB
 
 // ── IPC: sessions:get-all ─────────────────────────────────────────────────────
 
@@ -352,6 +382,7 @@ app.on('activate', () => {
 
 ipcMain.handle('sessions:rename', async (_event, sessionId: string, newSummary: string): Promise<boolean> => {
   try {
+    if (!isValidSessionId(sessionId)) return false
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     const yamlPath = path.join(sessionDir, 'workspace.yaml')
     if (!fs.existsSync(yamlPath)) return false
@@ -369,6 +400,7 @@ ipcMain.handle('sessions:rename', async (_event, sessionId: string, newSummary: 
 
 ipcMain.handle('sessions:archive', async (_event, sessionId: string): Promise<{ ok: boolean; error?: string }> => {
   try {
+    if (!isValidSessionId(sessionId)) return { ok: false, error: 'Invalid session ID' }
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     if (!fs.existsSync(sessionDir)) return { ok: false, error: 'Session not found' }
 
@@ -400,6 +432,7 @@ ipcMain.handle('sessions:archive', async (_event, sessionId: string): Promise<{ 
 
 ipcMain.handle('sessions:delete', async (_event, sessionId: string): Promise<{ ok: boolean; error?: string }> => {
   try {
+    if (!isValidSessionId(sessionId)) return { ok: false, error: 'Invalid session ID' }
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     if (!fs.existsSync(sessionDir)) return { ok: false, error: 'Session not found' }
 
@@ -427,6 +460,7 @@ ipcMain.handle('sessions:delete', async (_event, sessionId: string): Promise<{ o
 
 ipcMain.handle('sessions:set-tags', async (_e, sessionId: string, tags: string[]): Promise<boolean> => {
   try {
+    if (!isValidSessionId(sessionId)) return false
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     if (!fs.existsSync(sessionDir)) return false
     const metaFile = path.join(sessionDir, 'gridwatch.json')
@@ -445,6 +479,7 @@ ipcMain.handle('sessions:set-tags', async (_e, sessionId: string, tags: string[]
 
 ipcMain.handle('sessions:set-notes', async (_e, sessionId: string, notes: string): Promise<boolean> => {
   try {
+    if (!isValidSessionId(sessionId)) return false
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     if (!fs.existsSync(sessionDir)) return false
     const metaFile = path.join(sessionDir, 'gridwatch.json')
@@ -467,6 +502,7 @@ ipcMain.handle('sessions:get-context', async (_e, sessionId: string): Promise<{
   notes: string
   tags: string[]
 }> => {
+  if (!isValidSessionId(sessionId)) return { plan: null, checkpoints: [], notes: '', tags: [] }
   const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
   const result = { plan: null as string | null, checkpoints: [] as string[], notes: '', tags: [] as string[] }
   if (!fs.existsSync(sessionDir)) return result
@@ -505,6 +541,8 @@ ipcMain.handle('sessions:get-context', async (_e, sessionId: string): Promise<{
 
 ipcMain.handle('sessions:write-transfer', async (_e, sessionId: string, content: string): Promise<string | null> => {
   try {
+    if (!isValidSessionId(sessionId)) return null
+    if (typeof content !== 'string' || content.length > MAX_TRANSFER_SIZE) return null
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     if (!fs.existsSync(sessionDir)) return null
     const now = new Date()
@@ -521,6 +559,7 @@ ipcMain.handle('sessions:write-transfer', async (_e, sessionId: string, content:
 
 ipcMain.handle('sessions:list-transfers', async (_e, sessionId: string): Promise<{ name: string; date: string; size: number }[]> => {
   try {
+    if (!isValidSessionId(sessionId)) return []
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
     if (!fs.existsSync(sessionDir)) return []
     return fs.readdirSync(sessionDir)
@@ -539,8 +578,11 @@ ipcMain.handle('sessions:list-transfers', async (_e, sessionId: string): Promise
 
 ipcMain.handle('sessions:read-transfer', async (_e, sessionId: string, filename: string): Promise<string | null> => {
   try {
-    const filePath = path.join(os.homedir(), '.copilot', 'session-state', sessionId, filename)
-    if (!fs.existsSync(filePath) || !filename.startsWith('transfer-')) return null
+    if (!isValidSessionId(sessionId)) return null
+    const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
+    const filePath = path.join(sessionDir, filename)
+    if (!filename.startsWith('transfer-') || !isPathWithin(filePath, sessionDir)) return null
+    if (!fs.existsSync(filePath)) return null
     return fs.readFileSync(filePath, 'utf-8')
   } catch {
     return null
@@ -551,8 +593,11 @@ ipcMain.handle('sessions:read-transfer', async (_e, sessionId: string, filename:
 
 ipcMain.handle('sessions:delete-transfer', async (_e, sessionId: string, filename: string): Promise<boolean> => {
   try {
-    const filePath = path.join(os.homedir(), '.copilot', 'session-state', sessionId, filename)
-    if (!fs.existsSync(filePath) || !filename.startsWith('transfer-')) return false
+    if (!isValidSessionId(sessionId)) return false
+    const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
+    const filePath = path.join(sessionDir, filename)
+    if (!filename.startsWith('transfer-') || !isPathWithin(filePath, sessionDir)) return false
+    if (!fs.existsSync(filePath)) return false
     fs.unlinkSync(filePath)
     return true
   } catch {
@@ -607,7 +652,42 @@ function checkForUpdate(): Promise<{ hasUpdate: boolean; latestVersion?: string;
 ipcMain.handle('app:check-for-update', async () => checkForUpdate())
 
 ipcMain.handle('app:open-external', async (_e, url: string) => {
+  if (typeof url !== 'string' || !(url.startsWith('https://') || url.startsWith('http://'))) {
+    throw new Error('Only HTTP(S) URLs are allowed')
+  }
   await shell.openExternal(url)
+})
+
+// ── IPC: secure token storage ──────────────────────────────────────────────────
+
+const TOKEN_FILE = path.join(os.homedir(), '.copilot', 'gridwatch-token.enc')
+
+ipcMain.handle('app:save-token', async (_e, token: string): Promise<boolean> => {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return false
+    if (!token) {
+      if (fs.existsSync(TOKEN_FILE)) fs.unlinkSync(TOKEN_FILE)
+      return true
+    }
+    const encrypted = safeStorage.encryptString(token)
+    const dir = path.dirname(TOKEN_FILE)
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(TOKEN_FILE, encrypted)
+    return true
+  } catch {
+    return false
+  }
+})
+
+ipcMain.handle('app:load-token', async (): Promise<string> => {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return ''
+    if (!fs.existsSync(TOKEN_FILE)) return ''
+    const encrypted = fs.readFileSync(TOKEN_FILE)
+    return safeStorage.decryptString(encrypted)
+  } catch {
+    return ''
+  }
 })
 
 // ── IPC: insights:analyse ──────────────────────────────────────────────────

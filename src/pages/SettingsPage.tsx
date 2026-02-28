@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import styles from './SettingsPage.module.css'
 
 export interface AppSettings {
@@ -16,15 +16,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
 }
 
 const STORAGE_KEY = 'gridwatch-settings'
-const API_KEY_STORAGE_KEY = 'gridwatch-github-token'
 
-export function loadApiKey(): string {
-  try { return localStorage.getItem(API_KEY_STORAGE_KEY) || '' } catch { return '' }
+export async function loadApiKey(): Promise<string> {
+  try { return await window.gridwatchAPI.loadToken() } catch { return '' }
 }
 
-export function saveApiKey(key: string): void {
-  if (key) localStorage.setItem(API_KEY_STORAGE_KEY, key)
-  else localStorage.removeItem(API_KEY_STORAGE_KEY)
+export async function saveApiKey(key: string): Promise<void> {
+  try { await window.gridwatchAPI.saveToken(key) } catch { /* ignore */ }
 }
 
 export function loadSettings(): AppSettings {
@@ -83,8 +81,10 @@ interface Props {
 }
 
 export default function SettingsPage({ settings, onChange }: Props) {
-  const [apiKey, setApiKey] = useState(() => loadApiKey())
+  const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
+
+  useEffect(() => { loadApiKey().then(setApiKey) }, [])
 
   const update = (patch: Partial<AppSettings>) => {
     const next = { ...settings, ...patch }

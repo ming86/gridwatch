@@ -46,6 +46,12 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 ### Settings
 ![Settings](public/images/screenshot-settings.svg)
 
+### Insights
+![Insights](public/images/screenshot-insights.svg)
+
+### Transfer
+![Transfer](public/images/screenshot-transfer.svg)
+
 ---
 
 ## 📋 Prerequisites
@@ -109,6 +115,8 @@ gridwatch/
 │   │   ├── TokensPage.tsx      # Token usage charts
 │   │   ├── ActivityPage.tsx    # Heatmap + activity analytics
 │   │   ├── InsightsPage.tsx    # AI-powered prompt feedback
+│   │   ├── InsightsPage.tsx    # AI-powered prompt feedback
+│   │   ├── TransferPage.tsx    # Session context transfer
 │   │   └── SettingsPage.tsx    # UI scale / font / density controls
 │   ├── types/
 │   │   ├── session.ts          # SessionData and related interfaces
@@ -136,7 +144,7 @@ npm run pack:all     # Build for all platforms
 
 ### 📊 Data sources
 
-GridWatch reads exclusively from local files — no network requests are made except to check for updates.
+GridWatch reads exclusively from local files — no network requests are made except to check for updates and (optionally) to call the GitHub Models API for AI Insights.
 
 | Data | Source |
 |---|---|
@@ -145,7 +153,18 @@ GridWatch reads exclusively from local files — no network requests are made ex
 | Rewind snapshots | `~/.copilot/session-state/<uuid>/rewind-snapshots/index.json` |
 | Token usage | `~/.copilot/logs/process-<timestamp>-<pid>.log` |
 | Session tags / custom data | `~/.copilot/session-state/<uuid>/gridwatch.json` (written by GridWatch) |
+| Encrypted API token | `~/.copilot/gridwatch-token.enc` (encrypted via OS keychain) |
 | Update check | `api.github.com/repos/faesel/gridwatch/releases/latest` (on startup only) |
+
+### 🔒 Security
+
+- **Context isolation** — renderer process communicates with main only via a typed `gridwatchAPI` bridge; no generic IPC exposed
+- **Sandbox enabled** — renderer runs in a sandboxed process
+- **Content Security Policy** — strict CSP applied in production (no inline scripts)
+- **Input validation** — all IPC handlers validate session IDs (UUID format) and file paths (traversal protection)
+- **Encrypted secrets** — GitHub PAT encrypted at rest via Electron `safeStorage` (OS keychain)
+- **URL restriction** — `shell.openExternal` limited to HTTP(S) URLs only
+- **Hardened runtime** — macOS builds use hardened runtime for notarization compatibility
 
 ### ⚙️ Tech stack
 

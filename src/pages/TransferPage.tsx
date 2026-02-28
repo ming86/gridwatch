@@ -101,7 +101,7 @@ export default function TransferPage({ sessions }: Props) {
 
   const generateAndTransfer = async () => {
     if (!source || !target || !context) return
-    const apiKey = loadApiKey()
+    const apiKey = await loadApiKey()
     if (!apiKey) {
       setError('No GitHub token set. Go to Settings → GitHub Personal Access Token to add one.')
       return
