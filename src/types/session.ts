@@ -12,6 +12,12 @@ export interface RewindSnapshot {
   fileCount: number;
 }
 
+export interface UserMessage {
+  content: string;
+  model?: string;
+  timestamp?: string;
+}
+
 export interface SessionData {
   id: string;
   cwd: string;
@@ -26,7 +32,7 @@ export interface SessionData {
   toolsUsed: string[];
   copilotVersion?: string;
   lastUserMessage?: string;
-  userMessages: string[];
+  userMessages: UserMessage[];
   tags: string[];
   notes: string;
   rewindSnapshots: RewindSnapshot[];

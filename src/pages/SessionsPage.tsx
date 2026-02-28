@@ -621,7 +621,14 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
               </div>
               {[...selectedSession.userMessages].reverse().map((msg, i) => (
                 <div key={i} className={styles.rewindItem}>
-                  <div className={styles.rewindMsg}>{msg}</div>
+                  <div className={styles.rewindMsg}>
+                    {msg.content}
+                    {msg.model && (
+                      <span className={`${styles.modelBadge} ${msg.model.includes('opus') ? styles.modelPremium : msg.model.includes('haiku') ? styles.modelFast : ''}`}>
+                        {msg.model.replace('claude-', '').replace('gpt-', '')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

@@ -115,7 +115,7 @@ export default function TransferPage({ sessions }: Props) {
     const sourceText: string[] = []
     if (context.plan) sourceText.push(`Plan:\n${context.plan}`)
     for (const cp of context.checkpoints) sourceText.push(`Checkpoint:\n${cp}`)
-    if (source.userMessages.length > 0) sourceText.push(`User prompts:\n${source.userMessages.join('\n')}`)
+    if (source.userMessages.length > 0) sourceText.push(`User prompts:\n${source.userMessages.map(m => m.content).join('\n')}`)
     if (context.notes) sourceText.push(`Notes:\n${context.notes}`)
 
     try {

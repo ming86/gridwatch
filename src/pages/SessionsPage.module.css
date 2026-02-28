@@ -901,3 +901,26 @@
   color: var(--tron-text-dim);
   letter-spacing: 1px;
 }
+
+/* Model badges */
+.modelBadge {
+  display: inline-block;
+  font-size: calc(8 * var(--font-scale, 1) * 1px);
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  border: 1px solid var(--tron-border);
+  border-radius: 3px;
+  color: var(--tron-text-dim);
+  vertical-align: middle;
+}
+
+.modelPremium {
+  color: var(--tron-orange);
+  border-color: var(--tron-orange);
+}
+
+.modelFast {
+  color: var(--tron-cyan);
+  border-color: var(--tron-cyan);
+}

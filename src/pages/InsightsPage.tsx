@@ -53,7 +53,7 @@ export default function InsightsPage({ sessions }: Props) {
     setResult(null)
 
     try {
-      const res = await window.gridwatchAPI.analyseSession(apiKey, selected.userMessages)
+      const res = await window.gridwatchAPI.analyseSession(apiKey, selected.userMessages.map(m => m.content))
       setResult(res)
     } catch (err) {
       setError((err as Error).message || 'Analysis failed')
@@ -96,7 +96,7 @@ export default function InsightsPage({ sessions }: Props) {
           {selected.userMessages.slice(0, 5).map((msg, i) => (
             <div key={i} className={styles.previewPrompt}>
               <span className={styles.promptNum}>{i + 1}.</span>
-              {truncate(msg, 120)}
+              {truncate(msg.content, 120)}
             </div>
           ))}
           {selected.userMessages.length > 5 && (

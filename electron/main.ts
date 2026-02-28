@@ -189,32 +189,47 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
         const toolsUsed = new Set<string>()
         let copilotVersion: string | undefined
         let lastUserMessage: string | undefined
-        const userMessages: string[] = []
+        const userMessages: { content: string; model?: string; timestamp?: string }[] = []
 
         const eventsFile = path.join(sessionDir, 'events.jsonl')
         if (fs.existsSync(eventsFile)) {
           const eventsContent = fs.readFileSync(eventsFile, 'utf-8')
+          const allEvents: { type: string; data?: Record<string, unknown>; timestamp?: string }[] = []
           for (const line of eventsContent.split('\n')) {
-            if (!line.includes('session.start') && !line.includes('user.message') && !line.includes('tool.execution_start')) continue
+            if (!line.includes('session.start') && !line.includes('user.message') && !line.includes('tool.execution_start') && !line.includes('tool.execution_complete')) continue
             try {
-              const event = JSON.parse(line)
-              if (event.type === 'session.start' && event.data?.copilotVersion) {
-                copilotVersion = event.data.copilotVersion
-              }
-              if (event.type === 'user.message') {
-                turnCount++
-                const msg = event.data?.content || event.data?.message
-                if (msg) {
-                  lastUserMessage = msg
-                  userMessages.push(msg)
-                }
-              }
-              if (event.type === 'tool.execution_start' && event.data?.toolName) {
-                toolsUsed.add(event.data.toolName)
-              }
+              allEvents.push(JSON.parse(line))
             } catch {
               // skip malformed lines
             }
+          }
+
+          // Collect model info from tool.execution_complete events
+          const toolModels: { timestamp: string; model: string }[] = []
+          for (const event of allEvents) {
+            if (event.type === 'session.start' && event.data?.copilotVersion) {
+              copilotVersion = event.data.copilotVersion as string
+            }
+            if (event.type === 'user.message') {
+              turnCount++
+              const msg = (event.data?.content || event.data?.message) as string | undefined
+              if (msg) {
+                lastUserMessage = msg
+                userMessages.push({ content: msg, timestamp: event.timestamp })
+              }
+            }
+            if (event.type === 'tool.execution_start' && event.data?.toolName) {
+              toolsUsed.add(event.data.toolName as string)
+            }
+            if (event.type === 'tool.execution_complete' && event.data?.model) {
+              toolModels.push({ timestamp: event.timestamp || '', model: event.data.model as string })
+            }
+          }
+
+          // Assign model to each user message from the first tool_complete after it
+          for (const um of userMessages) {
+            const found = toolModels.find(tc => tc.timestamp > (um.timestamp || ''))
+            if (found) um.model = found.model
           }
         }
 
