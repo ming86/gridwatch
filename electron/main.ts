@@ -606,12 +606,25 @@ Keep feedback concise and actionable. Max 5 suggestions.`
 ipcMain.handle(
   'insights:analyse',
   async (_e, token: string, messages: string[]) => {
+    // Truncate each message and cap total to fit within ~6K tokens (leaving room for system prompt + response)
+    const MAX_MSGS = 30
+    const MAX_CHARS_PER_MSG = 300
+    const MAX_TOTAL_CHARS = 5000
+    const trimmed = messages.slice(0, MAX_MSGS).map(m => m.length > MAX_CHARS_PER_MSG ? m.slice(0, MAX_CHARS_PER_MSG) + '…' : m)
+    let totalChars = 0
+    const capped: string[] = []
+    for (const m of trimmed) {
+      if (totalChars + m.length > MAX_TOTAL_CHARS) break
+      capped.push(m)
+      totalChars += m.length
+    }
+
     return new Promise((resolve, reject) => {
       const body = JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: INSIGHTS_SYSTEM_PROMPT },
-          { role: 'user', content: `Here are the user prompts from this session:\n\n${messages.map((m, i) => `${i + 1}. ${m}`).join('\n\n')}` },
+          { role: 'user', content: `Here are the user prompts from this session (${capped.length} of ${messages.length}):\n\n${capped.map((m, i) => `${i + 1}. ${m}`).join('\n\n')}` },
         ],
         temperature: 0.3,
         max_tokens: 2000,
