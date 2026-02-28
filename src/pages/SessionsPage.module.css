@@ -699,6 +699,31 @@
   border-bottom-color: var(--tron-cyan);
 }
 
+.notesInput {
+  width: 100%;
+  min-height: 80px;
+  background: rgba(0, 245, 255, 0.03);
+  border: 1px solid var(--tron-border);
+  border-radius: 4px;
+  color: var(--tron-text);
+  font-family: inherit;
+  font-size: calc(11 * var(--font-scale, 1) * 1px);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.notesInput::placeholder {
+  color: var(--tron-text-dim);
+}
+
+.notesInput:focus {
+  border-color: var(--tron-cyan);
+}
+
 .pagination {
   display: flex;
   align-items: center;

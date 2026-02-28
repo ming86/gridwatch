@@ -255,6 +255,16 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
             } catch { /* ignore */ }
             return []
           })(),
+          notes: (() => {
+            try {
+              const meta = path.join(sessionDir, 'gridwatch.json')
+              if (fs.existsSync(meta)) {
+                const d = JSON.parse(fs.readFileSync(meta, 'utf-8'))
+                return typeof d.notes === 'string' ? d.notes : ''
+              }
+            } catch { /* ignore */ }
+            return ''
+          })(),
           rewindSnapshots,
           filesModified,
           peakTokens,
@@ -425,6 +435,24 @@ ipcMain.handle('sessions:set-tags', async (_e, sessionId: string, tags: string[]
       try { existing = JSON.parse(fs.readFileSync(metaFile, 'utf-8')) } catch { /* ignore */ }
     }
     fs.writeFileSync(metaFile, JSON.stringify({ ...existing, tags }, null, 2), 'utf-8')
+    return true
+  } catch {
+    return false
+  }
+})
+
+// ── IPC: sessions:set-notes ───────────────────────────────────────────────────
+
+ipcMain.handle('sessions:set-notes', async (_e, sessionId: string, notes: string): Promise<boolean> => {
+  try {
+    const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
+    if (!fs.existsSync(sessionDir)) return false
+    const metaFile = path.join(sessionDir, 'gridwatch.json')
+    let existing: Record<string, unknown> = {}
+    if (fs.existsSync(metaFile)) {
+      try { existing = JSON.parse(fs.readFileSync(metaFile, 'utf-8')) } catch { /* ignore */ }
+    }
+    fs.writeFileSync(metaFile, JSON.stringify({ ...existing, notes }, null, 2), 'utf-8')
     return true
   } catch {
     return false

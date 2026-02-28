@@ -22,6 +22,7 @@ declare global {
       archiveSession: (sessionId: string) => Promise<{ ok: boolean; error?: string }>;
       deleteSession: (sessionId: string) => Promise<{ ok: boolean; error?: string }>;
       setTags: (sessionId: string, tags: string[]) => Promise<boolean>;
+      setNotes: (sessionId: string, notes: string) => Promise<boolean>;
       setZoomFactor: (factor: number) => void;
       getZoomFactor: () => number;
       checkForUpdate: () => Promise<{ hasUpdate: boolean; latestVersion?: string; downloadUrl?: string }>;

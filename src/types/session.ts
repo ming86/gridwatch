@@ -28,6 +28,7 @@ export interface SessionData {
   lastUserMessage?: string;
   userMessages: string[];
   tags: string[];
+  notes: string;
   rewindSnapshots: RewindSnapshot[];
   filesModified: string[];
   peakTokens: number;

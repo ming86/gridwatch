@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('gridwatchAPI', {
     ipcRenderer.invoke('sessions:delete', sessionId),
   setTags: (sessionId: string, tags: string[]) =>
     ipcRenderer.invoke('sessions:set-tags', sessionId, tags),
+  setNotes: (sessionId: string, notes: string) =>
+    ipcRenderer.invoke('sessions:set-notes', sessionId, notes),
   setZoomFactor: (factor: number) => webFrame.setZoomFactor(factor),
   getZoomFactor: () => webFrame.getZoomFactor(),
   checkForUpdate: () => ipcRenderer.invoke('app:check-for-update'),

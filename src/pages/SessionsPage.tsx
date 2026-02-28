@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { SessionData } from '../types/session'
 import styles from './SessionsPage.module.css'
 
@@ -70,10 +70,13 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [actionError, setActionError] = useState<string | null>(null)
   const [tagInput, setTagInput] = useState('')
   const [localTags, setLocalTags] = useState<string[]>([])
+  const [localNotes, setLocalNotes] = useState('')
+  const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Sync localTags when selected session changes
+  // Sync localTags and localNotes when selected session changes
   useEffect(() => {
     setLocalTags(selectedSession?.tags ?? [])
+    setLocalNotes(selectedSession?.notes ?? '')
     setTagInput('')
   }, [selectedSession?.id])
 
@@ -109,6 +112,15 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     setLocalTags(next)
     await window.gridwatchAPI.setTags(selectedSession.id, next)
     onSessionRenamed()
+  }
+
+  const handleNotesChange = (value: string) => {
+    setLocalNotes(value)
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current)
+    notesTimerRef.current = setTimeout(async () => {
+      if (!selectedSession) return
+      await window.gridwatchAPI.setNotes(selectedSession.id, value)
+    }, 500)
   }
 
   const handleArchive = async () => {
@@ -477,6 +489,19 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                 }}
               />
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>NOTES</div>
+            <textarea
+              className={styles.notesInput}
+              placeholder="Add notes about this session..."
+              value={localNotes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              rows={4}
+              spellCheck={false}
+            />
           </div>
 
           {/* Prompt history from events.jsonl */}
