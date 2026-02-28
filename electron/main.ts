@@ -190,16 +190,12 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
         let copilotVersion: string | undefined
         let lastUserMessage: string | undefined
         const userMessages: string[] = []
-        let assistantCount = 0
-        let toolCallCount = 0
-        let compactionCount = 0
-        let subagentCount = 0
 
         const eventsFile = path.join(sessionDir, 'events.jsonl')
         if (fs.existsSync(eventsFile)) {
           const eventsContent = fs.readFileSync(eventsFile, 'utf-8')
           for (const line of eventsContent.split('\n')) {
-            if (!line.includes('session.start') && !line.includes('user.message') && !line.includes('tool.execution_start') && !line.includes('assistant.turn_end') && !line.includes('compaction_complete') && !line.includes('subagent.started')) continue
+            if (!line.includes('session.start') && !line.includes('user.message') && !line.includes('tool.execution_start')) continue
             try {
               const event = JSON.parse(line)
               if (event.type === 'session.start' && event.data?.copilotVersion) {
@@ -215,16 +211,6 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
               }
               if (event.type === 'tool.execution_start' && event.data?.toolName) {
                 toolsUsed.add(event.data.toolName)
-                toolCallCount++
-              }
-              if (event.type === 'assistant.turn_end') {
-                assistantCount++
-              }
-              if (event.type === 'session.compaction_complete') {
-                compactionCount++
-              }
-              if (event.type === 'subagent.started') {
-                subagentCount++
               }
             } catch {
               // skip malformed lines
@@ -321,13 +307,6 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
           peakTokens,
           peakUtilisation,
           tokenHistory,
-          contextComposition: {
-            userMessages: turnCount,
-            assistantMessages: assistantCount,
-            toolCalls: toolCallCount,
-            compactions: compactionCount,
-            subagents: subagentCount,
-          },
         })
       } catch {
         resolve(null)

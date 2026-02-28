@@ -12,14 +12,6 @@ export interface RewindSnapshot {
   fileCount: number;
 }
 
-export interface ContextComposition {
-  userMessages: number;
-  assistantMessages: number;
-  toolCalls: number;
-  compactions: number;
-  subagents: number;
-}
-
 export interface SessionData {
   id: string;
   cwd: string;
@@ -42,5 +34,4 @@ export interface SessionData {
   peakTokens: number;
   peakUtilisation: number;
   tokenHistory: TokenDataPoint[];
-  contextComposition: ContextComposition;
 }
