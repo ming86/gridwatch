@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import type { SessionData } from '../types/session'
 import type { InsightResult } from '../types/global'
 import { loadApiKey } from './SettingsPage'
@@ -28,7 +28,7 @@ function scoreLabel(score: number): string {
   return 'POOR'
 }
 
-export default function InsightsPage({ sessions }: Props) {
+function InsightsPage({ sessions }: Props) {
   const [selected, setSelected] = useState<SessionData | null>(null)
   const [result, setResult] = useState<InsightResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -180,3 +180,5 @@ export default function InsightsPage({ sessions }: Props) {
     </div>
   )
 }
+
+export default memo(InsightsPage)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import type { SessionData } from '../types/session'
 import { loadApiKey } from './SettingsPage'
 import SessionPicker from '../components/SessionPicker'
@@ -15,7 +15,7 @@ interface SessionContext {
   tags: string[]
 }
 
-export default function TransferPage({ sessions }: Props) {
+function TransferPage({ sessions }: Props) {
   const [source, setSource] = useState<SessionData | null>(null)
   const [target, setTarget] = useState<SessionData | null>(null)
   const [context, setContext] = useState<SessionContext | null>(null)
@@ -267,3 +267,5 @@ export default function TransferPage({ sessions }: Props) {
     </div>
   )
 }
+
+export default memo(TransferPage)

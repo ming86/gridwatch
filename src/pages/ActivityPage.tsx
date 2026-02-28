@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, memo } from 'react'
 import {
   BarChart,
   Bar,
@@ -84,33 +84,42 @@ interface HeatmapTooltipState {
   y: number
 }
 
-export default function ActivityPage({ sessions }: Props) {
+function ActivityPage({ sessions }: Props) {
   const [tooltip, setTooltip] = useState<HeatmapTooltipState | null>(null)
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
 
-  const filtered = filterByTags(sessions, selectedTags)
+  const filtered = useMemo(() => filterByTags(sessions, selectedTags), [sessions, selectedTags])
 
   // ── Session count by day ──────────────────────────────────
-  const sessionCountByDay = new Map<string, number>()
-  for (const s of filtered) {
-    const day = (s.createdAt ?? '').slice(0, 10)
-    if (day) sessionCountByDay.set(day, (sessionCountByDay.get(day) || 0) + 1)
-  }
+  const sessionCountByDay = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const s of filtered) {
+      const day = (s.createdAt ?? '').slice(0, 10)
+      if (day) map.set(day, (map.get(day) || 0) + 1)
+    }
+    return map
+  }, [filtered])
 
   // ── Repo map ──────────────────────────────────────────────
-  const repoMap = new Map<string, number>()
-  for (const s of filtered) {
-    const name = s.repository || basename(s.cwd || '')
-    if (name) repoMap.set(name, (repoMap.get(name) || 0) + 1)
-  }
+  const repoMap = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const s of filtered) {
+      const name = s.repository || basename(s.cwd || '')
+      if (name) map.set(name, (map.get(name) || 0) + 1)
+    }
+    return map
+  }, [filtered])
 
   // ── Tool map ──────────────────────────────────────────────
-  const toolMap = new Map<string, number>()
-  for (const s of filtered) {
-    for (const tool of (s.toolsUsed ?? [])) {
-      toolMap.set(tool, (toolMap.get(tool) || 0) + 1)
+  const toolMap = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const s of filtered) {
+      for (const tool of (s.toolsUsed ?? [])) {
+        map.set(tool, (map.get(tool) || 0) + 1)
+      }
     }
-  }
+    return map
+  }, [filtered])
 
   // ── Stats ─────────────────────────────────────────────────
   const totalSessions = filtered.length
@@ -119,36 +128,41 @@ export default function ActivityPage({ sessions }: Props) {
   const [favTool = '—'] = [...toolMap.entries()].sort(([, a], [, b]) => b - a).map(([k]) => k)
 
   // ── Heatmap ───────────────────────────────────────────────
-  const cells = buildHeatmapCells()
+  const cells = useMemo(() => buildHeatmapCells(), [])
 
-  const monthLabels: { month: string; col: number }[] = []
-  cells.forEach((date, i) => {
-    if (date.getDate() === 1) {
-      const col = Math.floor(i / 7)
-      const month = date.toLocaleString('en', { month: 'short' }).toUpperCase()
-      if (!monthLabels.find((m) => m.col === col)) {
-        monthLabels.push({ month, col })
+  const monthLabels = useMemo(() => {
+    const labels: { month: string; col: number }[] = []
+    cells.forEach((date, i) => {
+      if (date.getDate() === 1) {
+        const col = Math.floor(i / 7)
+        const month = date.toLocaleString('en', { month: 'short' }).toUpperCase()
+        if (!labels.find((m) => m.col === col)) {
+          labels.push({ month, col })
+        }
       }
-    }
-  })
+    })
+    return labels
+  }, [cells])
 
   // ── Top repos ─────────────────────────────────────────────
-  const topRepos = [...repoMap.entries()].sort(([, a], [, b]) => b - a).slice(0, 10)
+  const topRepos = useMemo(() => [...repoMap.entries()].sort(([, a], [, b]) => b - a).slice(0, 10), [repoMap])
   const maxRepoCount = topRepos[0]?.[1] || 1
 
   // ── Top tools ─────────────────────────────────────────────
-  const topTools = [...toolMap.entries()].sort(([, a], [, b]) => b - a).slice(0, 10)
+  const topTools = useMemo(() => [...toolMap.entries()].sort(([, a], [, b]) => b - a).slice(0, 10), [toolMap])
   const maxToolCount = topTools[0]?.[1] || 1
 
   // ── Day of week chart ─────────────────────────────────────
-  const dayCountMap = new Map<number, number>()
-  for (const s of filtered) {
-    const d = new Date(s.createdAt ?? Date.now())
-    if (isNaN(d.getTime())) continue
-    const day = (d.getDay() + 6) % 7 // 0=Mon…6=Sun
-    dayCountMap.set(day, (dayCountMap.get(day) || 0) + 1)
-  }
-  const dayOfWeekData = DAY_NAMES.map((name, i) => ({ name, count: dayCountMap.get(i) || 0 }))
+  const dayOfWeekData = useMemo(() => {
+    const dayCountMap = new Map<number, number>()
+    for (const s of filtered) {
+      const d = new Date(s.createdAt ?? Date.now())
+      if (isNaN(d.getTime())) continue
+      const day = (d.getDay() + 6) % 7 // 0=Mon…6=Sun
+      dayCountMap.set(day, (dayCountMap.get(day) || 0) + 1)
+    }
+    return DAY_NAMES.map((name, i) => ({ name, count: dayCountMap.get(i) || 0 }))
+  }, [filtered])
 
   return (
     <div className={styles.page}>
@@ -308,3 +322,5 @@ export default function ActivityPage({ sessions }: Props) {
     </div>
   )
 }
+
+export default memo(ActivityPage)

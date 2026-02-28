@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import type { SessionData } from '../types/session'
 import styles from './SessionsPage.module.css'
 
@@ -193,9 +193,9 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   }
 
   // Collect all unique tags across sessions
-  const allTags = Array.from(
+  const allTags = useMemo(() => Array.from(
     new Set(sessions.flatMap((s) => s.tags ?? []))
-  ).sort()
+  ).sort(), [sessions])
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
@@ -208,7 +208,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
 
   const clearTagFilter = () => setSelectedTags(new Set())
 
-  const filtered = sessions.filter((s) => {
+  const filtered = useMemo(() => sessions.filter((s) => {
     // Tag filter: session must have ALL selected tags
     if (selectedTags.size > 0) {
       const sessionTags = s.tags ?? []
@@ -225,7 +225,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
       (s.branch || '').toLowerCase().includes(q) ||
       (s.tags ?? []).some((t) => t.toLowerCase().includes(q))
     )
-  })
+  }), [sessions, selectedTags, search])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
@@ -234,8 +234,8 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   useEffect(() => { setPage(0) }, [search, selectedTags])
 
   const totalCount = sessions.length
-  const todayCount = sessions.filter((s) => isToday(s.createdAt)).length
-  const uniqueRepos = new Set(sessions.map((s) => s.repository || s.cwd)).size
+  const todayCount = useMemo(() => sessions.filter((s) => isToday(s.createdAt)).length, [sessions])
+  const uniqueRepos = useMemo(() => new Set(sessions.map((s) => s.repository || s.cwd)).size, [sessions])
 
   const statusBadgeClass = (status: 'active' | 'today' | 'older') => {
     if (status === 'active') return styles.badgeActive

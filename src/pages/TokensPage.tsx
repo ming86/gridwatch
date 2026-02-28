@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, memo } from 'react'
 import {
   LineChart,
   Line,
@@ -56,7 +56,7 @@ function filterByRange<T extends { date: string }>(data: T[], range: TimeRange):
   return data.filter((d) => d.date >= cutoff)
 }
 
-export default function TokensPage({ sessions }: Props) {
+function TokensPage({ sessions }: Props) {
   const [logTokens, setLogTokens] = useState<LogTokenEntry[]>([])
   const [range, setRange] = useState<TimeRange>('1M')
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
@@ -65,30 +65,32 @@ export default function TokensPage({ sessions }: Props) {
     window.gridwatchAPI.getLogTokens().then(setLogTokens).catch(() => {})
   }, [])
 
-  const filtered = filterByTags(sessions, selectedTags)
-  const sessionsWithData = filtered.filter((s) => s.peakTokens > 0)
-  const avgUtilisation = sessionsWithData.length > 0
+  const filtered = useMemo(() => filterByTags(sessions, selectedTags), [sessions, selectedTags])
+  const sessionsWithData = useMemo(() => filtered.filter((s) => s.peakTokens > 0), [filtered])
+  const avgUtilisation = useMemo(() => sessionsWithData.length > 0
     ? sessionsWithData.reduce((sum, s) => sum + s.peakUtilisation, 0) / sessionsWithData.length
-    : 0
-  const maxTokens = sessionsWithData.length > 0
+    : 0, [sessionsWithData])
+  const maxTokens = useMemo(() => sessionsWithData.length > 0
     ? Math.max(...sessionsWithData.map((s) => s.peakTokens))
-    : 0
+    : 0, [sessionsWithData])
 
   // Line chart data: one point per log file entry (by date)
   // Aggregate by date (multiple log files can share the same date), keeping peak tokens
-  const lineMap = new Map<string, { tokens: number; utilisation: number }>()
-  logTokens.forEach((entry) => {
-    const existing = lineMap.get(entry.date)
-    if (!existing || entry.tokens > existing.tokens) {
-      lineMap.set(entry.date, { tokens: entry.tokens, utilisation: entry.utilisation })
-    }
-  })
-  const lineData = filterByRange(
-    Array.from(lineMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, { tokens, utilisation }]) => ({ date, tokens, util: utilisation })),
-    range,
-  )
+  const lineData = useMemo(() => {
+    const map = new Map<string, { tokens: number; utilisation: number }>()
+    logTokens.forEach((entry) => {
+      const existing = map.get(entry.date)
+      if (!existing || entry.tokens > existing.tokens) {
+        map.set(entry.date, { tokens: entry.tokens, utilisation: entry.utilisation })
+      }
+    })
+    return filterByRange(
+      Array.from(map.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, { tokens, utilisation }]) => ({ date, tokens, util: utilisation })),
+      range,
+    )
+  }, [logTokens, range])
 
   const hasData = lineData.length > 0
 
@@ -200,3 +202,5 @@ export default function TokensPage({ sessions }: Props) {
     </div>
   )
 }
+
+export default memo(TokensPage)

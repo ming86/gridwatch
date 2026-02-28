@@ -93,6 +93,14 @@ function isPathWithin(filePath: string, parentDir: string): boolean {
 
 const MAX_TRANSFER_SIZE = 1_048_576 // 1 MB
 
+// ── IPC response cache ────────────────────────────────────────────────────────
+let sessionsCache: { data: SessionData[]; timestamp: number } | null = null
+const CACHE_TTL = 5_000 // 5 seconds
+
+function invalidateSessionsCache() {
+  sessionsCache = null
+}
+
 // ── IPC: sessions:get-all ─────────────────────────────────────────────────────
 
 function parseTokenLine(line: string): { tokens: number; utilisation: number } | null {
@@ -154,6 +162,11 @@ function readLogTokenHistory(
 }
 
 ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
+  // Return cached result if fresh enough
+  if (sessionsCache && Date.now() - sessionsCache.timestamp < CACHE_TTL) {
+    return sessionsCache.data
+  }
+
   try {
     const sessionStateDir = path.join(os.homedir(), '.copilot', 'session-state')
     const logDir = path.join(os.homedir(), '.copilot', 'logs')
@@ -331,6 +344,7 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
     const results = await Promise.all(sessionPromises)
     const sessions = results.filter((s): s is SessionData => s !== null)
     sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    sessionsCache = { data: sessions, timestamp: Date.now() }
     return sessions
   } catch {
     return []
@@ -403,6 +417,7 @@ app.on('activate', () => {
 // ── IPC: sessions:rename ──────────────────────────────────────────────────────
 
 ipcMain.handle('sessions:rename', async (_event, sessionId: string, newSummary: string): Promise<boolean> => {
+  invalidateSessionsCache()
   try {
     if (!isValidSessionId(sessionId)) return false
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
@@ -426,6 +441,7 @@ ipcMain.handle('sessions:rename', async (_event, sessionId: string, newSummary: 
 // ── IPC: sessions:archive ─────────────────────────────────────────────────────
 
 ipcMain.handle('sessions:archive', async (_event, sessionId: string): Promise<{ ok: boolean; error?: string }> => {
+  invalidateSessionsCache()
   try {
     if (!isValidSessionId(sessionId)) return { ok: false, error: 'Invalid session ID' }
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
@@ -458,6 +474,7 @@ ipcMain.handle('sessions:archive', async (_event, sessionId: string): Promise<{ 
 // ── IPC: sessions:delete ──────────────────────────────────────────────────────
 
 ipcMain.handle('sessions:delete', async (_event, sessionId: string): Promise<{ ok: boolean; error?: string }> => {
+  invalidateSessionsCache()
   try {
     if (!isValidSessionId(sessionId)) return { ok: false, error: 'Invalid session ID' }
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
@@ -486,6 +503,7 @@ ipcMain.handle('sessions:delete', async (_event, sessionId: string): Promise<{ o
 // ── IPC: sessions:set-tags ────────────────────────────────────────────────────
 
 ipcMain.handle('sessions:set-tags', async (_e, sessionId: string, tags: string[]): Promise<boolean> => {
+  invalidateSessionsCache()
   try {
     if (!isValidSessionId(sessionId)) return false
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
@@ -505,6 +523,7 @@ ipcMain.handle('sessions:set-tags', async (_e, sessionId: string, tags: string[]
 // ── IPC: sessions:set-notes ───────────────────────────────────────────────────
 
 ipcMain.handle('sessions:set-notes', async (_e, sessionId: string, notes: string): Promise<boolean> => {
+  invalidateSessionsCache()
   try {
     if (!isValidSessionId(sessionId)) return false
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
