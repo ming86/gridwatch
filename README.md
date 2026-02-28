@@ -84,6 +84,12 @@ xattr -cr /Applications/GridWatch.app
 
 Then open GridWatch as normal. You only need to do this once.
 
+#### 🔑 macOS: Keychain access prompt
+
+On first launch, macOS may ask you to allow GridWatch to access its own keychain entry. This is used **only** to encrypt your GitHub Personal Access Token (if you add one for AI Insights). GridWatch does not read or access any other keychain items — the access is scoped exclusively to its own encryption key (`com.faesel.gridwatch`). You can safely click **Allow** or **Always Allow**.
+
+> **Windows users:** No equivalent prompt appears. Windows uses DPAPI (Data Protection API) which encrypts data transparently under your Windows user account — no additional permissions are needed.
+
 ### 🔧 Build from source
 
 ```bash
@@ -162,7 +168,7 @@ GridWatch reads exclusively from local files — no network requests are made ex
 - **Sandbox enabled** — renderer runs in a sandboxed process
 - **Content Security Policy** — strict CSP applied in production (no inline scripts)
 - **Input validation** — all IPC handlers validate session IDs (UUID format) and file paths (traversal protection)
-- **Encrypted secrets** — GitHub PAT encrypted at rest via Electron `safeStorage` (OS keychain)
+- **Encrypted secrets** — GitHub PAT encrypted at rest via Electron `safeStorage` (macOS Keychain / Windows DPAPI), scoped to GridWatch's own app identity only
 - **URL restriction** — `shell.openExternal` limited to HTTP(S) URLs only
 - **Hardened runtime** — macOS builds use hardened runtime for notarization compatibility
 
