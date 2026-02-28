@@ -593,7 +593,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                       }}
                       aria-label={`Copy prompt for ${t.name}`}
                     >
-                      {copiedTransfer === t.name ? '✓' : '📋'}
+                      {copiedTransfer === t.name ? '✓' : '⧉'}
                     </button>
                     <button
                       className={styles.transferDelete}
