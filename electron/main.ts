@@ -501,20 +501,59 @@ ipcMain.handle('sessions:get-context', async (_e, sessionId: string): Promise<{
   return result
 })
 
-// ── IPC: sessions:write-plan ──────────────────────────────────────────────────
+// ── IPC: sessions:write-transfer ──────────────────────────────────────────────
 
-ipcMain.handle('sessions:write-plan', async (_e, sessionId: string, content: string): Promise<boolean> => {
+ipcMain.handle('sessions:write-transfer', async (_e, sessionId: string, content: string): Promise<string | null> => {
   try {
     const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
-    if (!fs.existsSync(sessionDir)) return false
-    const planFile = path.join(sessionDir, 'plan.md')
-    // Append to existing plan if one exists
-    let existing = ''
-    if (fs.existsSync(planFile)) {
-      try { existing = fs.readFileSync(planFile, 'utf-8') } catch { /* ignore */ }
-    }
-    const sep = existing ? '\n\n---\n\n# Transferred Context\n\n' : ''
-    fs.writeFileSync(planFile, existing + sep + content, 'utf-8')
+    if (!fs.existsSync(sessionDir)) return null
+    const now = new Date()
+    const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const filename = `transfer-${stamp}.md`
+    fs.writeFileSync(path.join(sessionDir, filename), content, 'utf-8')
+    return filename
+  } catch {
+    return null
+  }
+})
+
+// ── IPC: sessions:list-transfers ──────────────────────────────────────────────
+
+ipcMain.handle('sessions:list-transfers', async (_e, sessionId: string): Promise<{ name: string; date: string; size: number }[]> => {
+  try {
+    const sessionDir = path.join(os.homedir(), '.copilot', 'session-state', sessionId)
+    if (!fs.existsSync(sessionDir)) return []
+    return fs.readdirSync(sessionDir)
+      .filter(f => f.startsWith('transfer-') && f.endsWith('.md'))
+      .sort().reverse()
+      .map(f => {
+        const stat = fs.statSync(path.join(sessionDir, f))
+        return { name: f, date: stat.mtime.toISOString(), size: stat.size }
+      })
+  } catch {
+    return []
+  }
+})
+
+// ── IPC: sessions:read-transfer ───────────────────────────────────────────────
+
+ipcMain.handle('sessions:read-transfer', async (_e, sessionId: string, filename: string): Promise<string | null> => {
+  try {
+    const filePath = path.join(os.homedir(), '.copilot', 'session-state', sessionId, filename)
+    if (!fs.existsSync(filePath) || !filename.startsWith('transfer-')) return null
+    return fs.readFileSync(filePath, 'utf-8')
+  } catch {
+    return null
+  }
+})
+
+// ── IPC: sessions:delete-transfer ─────────────────────────────────────────────
+
+ipcMain.handle('sessions:delete-transfer', async (_e, sessionId: string, filename: string): Promise<boolean> => {
+  try {
+    const filePath = path.join(os.homedir(), '.copilot', 'session-state', sessionId, filename)
+    if (!fs.existsSync(filePath) || !filename.startsWith('transfer-')) return false
+    fs.unlinkSync(filePath)
     return true
   } catch {
     return false

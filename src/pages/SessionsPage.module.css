@@ -724,6 +724,77 @@
   border-color: var(--tron-cyan);
 }
 
+.transferItem {
+  border: 1px solid var(--tron-border);
+  border-radius: 3px;
+  margin-bottom: 6px;
+  background: rgba(0, 245, 255, 0.02);
+}
+
+.transferHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.transferName {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--tron-text);
+  font-family: inherit;
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.transferName:hover {
+  color: var(--tron-cyan);
+}
+
+.transferChevron {
+  color: var(--tron-cyan);
+  margin-right: 4px;
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+}
+
+.transferDate {
+  color: var(--tron-text-dim);
+  font-size: calc(9 * var(--font-scale, 1) * 1px);
+  flex-shrink: 0;
+}
+
+.transferDelete {
+  background: none;
+  border: none;
+  color: var(--tron-text-dim);
+  font-size: calc(12 * var(--font-scale, 1) * 1px);
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.transferDelete:hover {
+  color: var(--tron-orange);
+}
+
+.transferContent {
+  padding: 8px 10px;
+  border-top: 1px solid var(--tron-border);
+  color: var(--tron-text);
+  font-family: inherit;
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0;
+}
+
 .pagination {
   display: flex;
   align-items: center;

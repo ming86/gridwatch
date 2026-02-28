@@ -82,8 +82,8 @@ export default function TransferPage({ sessions }: Props) {
     }
 
     try {
-      const ok = await window.gridwatchAPI.writePlan(target.id, parts.join('\n'))
-      if (ok) {
+      const filename = await window.gridwatchAPI.writeTransfer(target.id, parts.join('\n'))
+      if (filename) {
         // Merge tags
         if (context.tags.length > 0) {
           const targetSession = sessions.find(s => s.id === target.id)
@@ -133,8 +133,8 @@ export default function TransferPage({ sessions }: Props) {
         summary,
       ].join('\n')
 
-      const ok = await window.gridwatchAPI.writePlan(target.id, content)
-      if (ok) setTransferred(true)
+      const filename = await window.gridwatchAPI.writeTransfer(target.id, content)
+      if (filename) setTransferred(true)
       else setError('Failed to write to target session')
     } catch (err) {
       setError((err as Error).message)

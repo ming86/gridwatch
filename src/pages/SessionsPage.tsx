@@ -72,12 +72,21 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [localTags, setLocalTags] = useState<string[]>([])
   const [localNotes, setLocalNotes] = useState('')
   const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [transfers, setTransfers] = useState<{ name: string; date: string; size: number }[]>([])
+  const [expandedTransfer, setExpandedTransfer] = useState<string | null>(null)
+  const [transferContent, setTransferContent] = useState<string | null>(null)
 
-  // Sync localTags and localNotes when selected session changes
+  // Sync localTags, localNotes, and transfers when selected session changes
   useEffect(() => {
     setLocalTags(selectedSession?.tags ?? [])
     setLocalNotes(selectedSession?.notes ?? '')
     setTagInput('')
+    setTransfers([])
+    setExpandedTransfer(null)
+    setTransferContent(null)
+    if (selectedSession) {
+      window.gridwatchAPI.listTransfers(selectedSession.id).then(setTransfers)
+    }
   }, [selectedSession?.id])
 
   const startRename = () => {
@@ -121,6 +130,30 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
       if (!selectedSession) return
       await window.gridwatchAPI.setNotes(selectedSession.id, value)
     }, 500)
+  }
+
+  const toggleTransfer = async (name: string) => {
+    if (expandedTransfer === name) {
+      setExpandedTransfer(null)
+      setTransferContent(null)
+      return
+    }
+    if (!selectedSession) return
+    const content = await window.gridwatchAPI.readTransfer(selectedSession.id, name)
+    setExpandedTransfer(name)
+    setTransferContent(content)
+  }
+
+  const deleteTransfer = async (name: string) => {
+    if (!selectedSession) return
+    const ok = await window.gridwatchAPI.deleteTransfer(selectedSession.id, name)
+    if (ok) {
+      setTransfers((prev) => prev.filter((t) => t.name !== name))
+      if (expandedTransfer === name) {
+        setExpandedTransfer(null)
+        setTransferContent(null)
+      }
+    }
   }
 
   const handleArchive = async () => {
@@ -503,6 +536,41 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
               spellCheck={false}
             />
           </div>
+
+          {/* Transferred context files */}
+          {transfers.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>TRANSFERRED CONTEXT ({transfers.length})</div>
+              {transfers.map((t) => (
+                <div key={t.name} className={styles.transferItem}>
+                  <div className={styles.transferHeader}>
+                    <button
+                      className={styles.transferName}
+                      onClick={() => toggleTransfer(t.name)}
+                    >
+                      <span className={styles.transferChevron}>
+                        {expandedTransfer === t.name ? '▾' : '▸'}
+                      </span>
+                      {t.name}
+                    </button>
+                    <span className={styles.transferDate}>
+                      {new Date(t.date).toLocaleDateString()}
+                    </span>
+                    <button
+                      className={styles.transferDelete}
+                      onClick={() => deleteTransfer(t.name)}
+                      aria-label={`Delete ${t.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  {expandedTransfer === t.name && transferContent && (
+                    <pre className={styles.transferContent}>{transferContent}</pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Prompt history from events.jsonl */}
           {selectedSession.userMessages.length > 0 && (

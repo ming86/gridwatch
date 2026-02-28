@@ -35,8 +35,14 @@ contextBridge.exposeInMainWorld('gridwatchAPI', {
     ipcRenderer.invoke('sessions:set-notes', sessionId, notes),
   getContext: (sessionId: string) =>
     ipcRenderer.invoke('sessions:get-context', sessionId),
-  writePlan: (sessionId: string, content: string) =>
-    ipcRenderer.invoke('sessions:write-plan', sessionId, content),
+  writeTransfer: (sessionId: string, content: string) =>
+    ipcRenderer.invoke('sessions:write-transfer', sessionId, content),
+  listTransfers: (sessionId: string) =>
+    ipcRenderer.invoke('sessions:list-transfers', sessionId),
+  readTransfer: (sessionId: string, filename: string) =>
+    ipcRenderer.invoke('sessions:read-transfer', sessionId, filename),
+  deleteTransfer: (sessionId: string, filename: string) =>
+    ipcRenderer.invoke('sessions:delete-transfer', sessionId, filename),
   setZoomFactor: (factor: number) => webFrame.setZoomFactor(factor),
   getZoomFactor: () => webFrame.getZoomFactor(),
   checkForUpdate: () => ipcRenderer.invoke('app:check-for-update'),

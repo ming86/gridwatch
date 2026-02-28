@@ -29,7 +29,10 @@ declare global {
         notes: string;
         tags: string[];
       }>;
-      writePlan: (sessionId: string, content: string) => Promise<boolean>;
+      writeTransfer: (sessionId: string, content: string) => Promise<string | null>;
+      listTransfers: (sessionId: string) => Promise<{ name: string; date: string; size: number }[]>;
+      readTransfer: (sessionId: string, filename: string) => Promise<string | null>;
+      deleteTransfer: (sessionId: string, filename: string) => Promise<boolean>;
       setZoomFactor: (factor: number) => void;
       getZoomFactor: () => number;
       checkForUpdate: () => Promise<{ hasUpdate: boolean; latestVersion?: string; downloadUrl?: string }>;
