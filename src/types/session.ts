@@ -52,4 +52,5 @@ export interface SessionData {
   tokenHistory: TokenDataPoint[];
   compactions: CompactionEvent[];
   isResearch: boolean;
+  researchReports: string[];
 }

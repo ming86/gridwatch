@@ -398,6 +398,17 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
           tokenHistory,
           compactions,
           isResearch,
+          researchReports: (() => {
+            try {
+              const researchDir = path.join(sessionDir, 'research')
+              if (!fs.existsSync(researchDir)) return []
+              return fs.readdirSync(researchDir)
+                .filter((f) => f.endsWith('.md'))
+                .sort()
+                .map((f) => path.join(researchDir, f))
+            } catch { /* ignore */ }
+            return []
+          })(),
         })
       } catch {
         resolve(null)
@@ -765,6 +776,11 @@ ipcMain.handle('app:open-external', async (_e, url: string) => {
     throw new Error('Only HTTP(S) URLs are allowed')
   }
   await shell.openExternal(url)
+})
+
+ipcMain.handle('app:show-in-folder', async (_e, filePath: string) => {
+  if (typeof filePath !== 'string') throw new Error('Invalid path')
+  shell.showItemInFolder(filePath)
 })
 
 // ── IPC: secure token storage ──────────────────────────────────────────────────

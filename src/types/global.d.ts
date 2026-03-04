@@ -37,6 +37,7 @@ declare global {
       getZoomFactor: () => number;
       checkForUpdate: () => Promise<{ hasUpdate: boolean; latestVersion?: string; downloadUrl?: string }>;
       openExternal: (url: string) => Promise<void>;
+      showInFolder: (filePath: string) => Promise<void>;
       saveToken: (token: string) => Promise<boolean>;
       loadToken: () => Promise<string>;
       analyseSession: (apiKey: string, messages: string[]) => Promise<InsightResult>;
