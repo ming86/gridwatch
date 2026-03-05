@@ -10,7 +10,7 @@ function stripFrontmatter(raw: string): string {
 
 type DialogMode = 'create' | 'rename-folder' | 'duplicate' | 'delete' | null
 
-export default function SkillsPage() {
+export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
   const [skills, setSkills] = useState<SkillData[]>([])
   const [selected, setSelected] = useState<SkillData | null>(null)
   const [search, setSearch] = useState('')
@@ -33,7 +33,14 @@ export default function SkillsPage() {
     } catch { /* ignore */ }
   }, [])
 
-  useEffect(() => { loadSkills() }, [loadSkills])
+  useEffect(() => {
+    loadSkills()
+    const interval = setInterval(loadSkills, 30_000)
+    return () => clearInterval(interval)
+  }, [loadSkills])
+
+  // Refresh when parent triggers via refreshKey
+  useEffect(() => { if (refreshKey) loadSkills() }, [refreshKey, loadSkills])
 
   // Load file content when selected skill or active file changes
   useEffect(() => {

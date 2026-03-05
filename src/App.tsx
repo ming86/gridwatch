@@ -59,7 +59,10 @@ function App() {
     return s
   })
 
+  const [refreshKey, setRefreshKey] = useState(0)
+
   const load = () => {
+    setRefreshKey((k) => k + 1)
     window.gridwatchAPI.getSessions().then((data) => {
       setSessions(data)
       setLoading(false)
@@ -89,7 +92,7 @@ function App() {
       case 'sessions': return <SessionsPage sessions={sessions} onSessionRenamed={load} />
       case 'tokens': return <TokensPage sessions={sessions} />
       case 'activity': return <ActivityPage sessions={sessions} />
-      case 'skills': return <SkillsPage />
+      case 'skills': return <SkillsPage refreshKey={refreshKey} />
       case 'insights': return <InsightsPage sessions={sessions} />
       case 'transfer': return <TransferPage sessions={sessions} />
       case 'settings': return <SettingsPage settings={appSettings} onChange={setAppSettings} />
