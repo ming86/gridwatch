@@ -26,6 +26,7 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 - 🟩 **Activity heatmap** — GitHub-style contribution grid showing your session activity over 52 weeks
 - ⚡ **AI Insights** — analyse your sessions with OpenAI to get prompt quality scores and improvement suggestions
 - 🏷️ **Tagging** — add, remove, and filter sessions by custom tags
+- ✦ **Skills management** — browse, create, edit, duplicate, delete, and search your Copilot CLI skills (`~/.copilot/skills/`). View rendered markdown with Tron-themed styling, toggle skills on/off, rename folders, import from files or folders, and export as zip archives
 - ✏️ **Rename sessions** — give sessions a meaningful name beyond the auto-generated summary
 - 🗑️ **Archive / Delete** — safely archive or permanently remove old sessions (guards against deleting active sessions)
 - 📂 **Open in folder** — reveal research reports and modified files in Finder (macOS) or Explorer (Windows)
@@ -124,11 +125,13 @@ gridwatch/
 │   │   ├── SessionsPage.tsx    # Sessions list + detail panel
 │   │   ├── TokensPage.tsx      # Token usage charts
 │   │   ├── ActivityPage.tsx    # Heatmap + activity analytics
+│   │   ├── SkillsPage.tsx      # Copilot skills browser and editor
 │   │   ├── InsightsPage.tsx    # AI-powered prompt feedback
 │   │   ├── TransferPage.tsx    # Session context transfer
 │   │   └── SettingsPage.tsx    # UI scale / font / density controls
 │   ├── types/
 │   │   ├── session.ts          # SessionData and related interfaces
+│   │   ├── skill.ts            # SkillData and SkillFile interfaces
 │   │   └── global.d.ts         # Window.gridwatchAPI type declarations
 │   ├── App.tsx                 # Shell layout, sidebar nav, auto-refresh
 │   └── index.css               # Global styles + Tron design system variables
@@ -163,6 +166,8 @@ GridWatch reads exclusively from local files — no network requests are made ex
 | Research reports | `~/.copilot/session-state/<uuid>/research/*.md` |
 | Token usage & compaction | `~/.copilot/logs/process-<timestamp>-<pid>.log` |
 | Session tags / custom data | `~/.copilot/session-state/<uuid>/gridwatch.json` (written by GridWatch) |
+| Copilot skills | `~/.copilot/skills/<name>/SKILL.md` (read/write for skill management) |
+| Disabled skills | `~/.copilot/skills-disabled/<name>/` (moved here when toggled off) |
 | Encrypted API token | `~/.copilot/gridwatch-token.enc` (encrypted via OS keychain) |
 | Update check | `api.github.com/repos/faesel/gridwatch/releases/latest` (on startup only) |
 
@@ -186,6 +191,7 @@ GridWatch reads exclusively from local files — no network requests are made ex
 | Packaging | electron-builder |
 | Styling | CSS Modules + CSS custom properties |
 | Charts | Recharts |
+| Markdown rendering | marked |
 | YAML parsing | js-yaml |
 | Font | JetBrains Mono (@fontsource) |
 

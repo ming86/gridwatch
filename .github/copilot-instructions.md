@@ -44,6 +44,7 @@ Renderer (src/)
 | File | Contents |
 |---|---|
 | `~/.copilot/session-state/<uuid>/gridwatch.json` | `{ "tags": ["tag1", "tag2"] }` |
+| `~/.copilot/skills-disabled/<name>/` | Skills moved here when disabled via GridWatch toggle |
 | `localStorage` (renderer) | `gridwatch-settings` — zoom, fontSize, spacing |
 
 ---
@@ -66,9 +67,11 @@ gridwatch/
 │   │   ├── SessionsPage.tsx      ← session list + detail panel (rename/archive/delete/tags/history)
 │   │   ├── TokensPage.tsx        ← token usage charts (line + bar + per-session table)
 │   │   ├── ActivityPage.tsx      ← heatmap, top repos, tool usage, day-of-week chart
+│   │   ├── SkillsPage.tsx        ← Copilot skills browser and editor (CRUD/import/export/toggle)
 │   │   └── SettingsPage.tsx      ← UI scale / font size / density; applySettings(), loadSettings()
 │   ├── types/
 │   │   ├── session.ts            ← SessionData, TokenDataPoint, CompactionEvent, RewindSnapshot interfaces
+│   │   ├── skill.ts              ← SkillData, SkillFile interfaces
 │   │   └── global.d.ts          ← Window.gridwatchAPI declarations
 │   ├── App.tsx                   ← shell, sidebar (sidebarTop/sidebarBottom), auto-refresh, PageErrorBoundary
 │   ├── App.module.css
@@ -97,7 +100,50 @@ gridwatch/
 | `setZoomFactor(n)` | — (webFrame) | Electron native zoom, correct viewport scaling |
 | `getZoomFactor()` | — (webFrame) | Returns current zoom factor |
 
+### Skills IPC
+
+| Method | IPC channel | Description |
+|---|---|---|
+| `getSkills()` | `skills:get-all` | Scans `~/.copilot/skills/` and `skills-disabled/`, returns `SkillData[]` |
+| `getSkillFile(name, file)` | `skills:get-file` | Reads a single file from a skill folder |
+| `saveSkillFile(name, file, content)` | `skills:save-file` | Writes content to a file in a skill folder |
+| `createSkill(name, desc)` | `skills:create` | Scaffolds a new skill folder with SKILL.md template |
+| `deleteSkill(name)` | `skills:delete` | Removes a skill folder recursively |
+| `duplicateSkill(name, newName)` | `skills:duplicate` | Copies a skill folder with updated frontmatter |
+| `renameSkillFolder(name, newName)` | `skills:rename-folder` | Renames the skill directory (not frontmatter) |
+| `toggleSkill(name)` | `skills:toggle` | Moves between `skills/` and `skills-disabled/` |
+| `exportSkill(name)` | `skills:export` | Creates a zip archive via save dialog |
+| `importSkill()` | `skills:import` | Opens file/folder dialog, copies into `skills/` |
+
+**Skill name validation:** lowercase alphanumeric and hyphens only (`/^[a-z0-9][a-z0-9-]*$/`).
+
 **Guards:** archive and delete refuse if `updatedAt` is within 2 minutes of now (active session protection).
+
+---
+
+## SkillData type
+
+```typescript
+interface SkillData {
+  name: string              // folder name (canonical ID)
+  displayName: string       // from YAML frontmatter `name`
+  description: string       // from YAML frontmatter `description`
+  license?: string          // from YAML frontmatter `license`
+  files: SkillFile[]        // all files in the skill folder
+  enabled: boolean          // true if in skills/, false if in skills-disabled/
+  createdAt: string         // folder stat birthtime
+  modifiedAt: string        // most recent file mtime
+  usageCount?: number       // from session event cross-reference
+  lastUsed?: string         // ISO date of last usage
+}
+
+interface SkillFile {
+  name: string              // filename (e.g. "SKILL.md")
+  path: string              // full path
+  size: number
+  modifiedAt: string
+}
+```
 
 ---
 
@@ -204,8 +250,8 @@ Density variants are applied via `data-density` attribute on `<html>`:
 │ Sidebar  │ Content (overflow-y: auto)            │
 │ (160px)  │                                       │
 │          │  <SessionsPage | TokensPage |          │
-│ sidebarTop  ActivityPage | SettingsPage>         │
-│ (scrolls)│                                       │
+│ sidebarTop  ActivityPage | SkillsPage |          │
+│ (scrolls)│  InsightsPage | SettingsPage>         │
 │          │                                       │
 │ ──────── │                                       │
 │ sidebarBottom (fixed: version label + Settings)  │
