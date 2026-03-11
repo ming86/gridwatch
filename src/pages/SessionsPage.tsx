@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import type { SessionData } from '../types/session'
 import styles from './SessionsPage.module.css'
 
@@ -79,6 +79,30 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [copiedResume, setCopiedResume] = useState(false)
   const [copiedTransfer, setCopiedTransfer] = useState<string | null>(null)
   const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set())
+  const [overflowingMsgs, setOverflowingMsgs] = useState<Set<string>>(new Set())
+  const msgRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+
+  const measureOverflow = useCallback((key: string, el: HTMLDivElement | null) => {
+    if (el) {
+      msgRefs.current.set(key, el)
+      const isTruncated = el.scrollHeight > el.clientHeight + 1
+      setOverflowingMsgs(prev => {
+        if (isTruncated && !prev.has(key)) {
+          const next = new Set(prev)
+          next.add(key)
+          return next
+        }
+        if (!isTruncated && prev.has(key)) {
+          const next = new Set(prev)
+          next.delete(key)
+          return next
+        }
+        return prev
+      })
+    } else {
+      msgRefs.current.delete(key)
+    }
+  }, [])
 
   // Sync localTags, localNotes, and transfers when selected session changes
   useEffect(() => {
@@ -89,6 +113,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     setExpandedTransfer(null)
     setTransferContent(null)
     setExpandedMsgs(new Set())
+    setOverflowingMsgs(new Set())
     if (selectedSession) {
       window.gridwatchAPI.listTransfers(selectedSession.id).then(setTransfers)
     }
@@ -679,7 +704,10 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                 const isExpanded = expandedMsgs.has(key)
                 return (
                   <div key={i} className={styles.rewindItem}>
-                    <div className={isExpanded ? styles.rewindMsgExpanded : styles.rewindMsg}>
+                    <div
+                      ref={el => !isExpanded && measureOverflow(key, el)}
+                      className={isExpanded ? styles.rewindMsgExpanded : styles.rewindMsg}
+                    >
                       {msg.content}
                       {msg.model && (
                         <span className={`${styles.modelBadge} ${msg.model.includes('opus') ? styles.modelPremium : msg.model.includes('haiku') ? styles.modelFast : ''}`}>
@@ -687,7 +715,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                         </span>
                       )}
                     </div>
-                    {msg.content.length > 120 && (
+                    {(isExpanded || overflowingMsgs.has(key)) && (
                       <button
                         className={styles.expandToggle}
                         onClick={() => setExpandedMsgs(prev => {
@@ -722,8 +750,11 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                       {snap.gitBranch && ` · ${snap.gitBranch}`}
                       {` · ${snap.fileCount} files`}
                     </div>
-                    <div className={isExpanded ? styles.rewindMsgExpanded : styles.rewindMsg}>{snap.userMessage}</div>
-                    {(snap.userMessage?.length ?? 0) > 120 && (
+                    <div
+                      ref={el => !isExpanded && measureOverflow(key, el)}
+                      className={isExpanded ? styles.rewindMsgExpanded : styles.rewindMsg}
+                    >{snap.userMessage}</div>
+                    {(isExpanded || overflowingMsgs.has(key)) && (
                       <button
                         className={styles.expandToggle}
                         onClick={() => setExpandedMsgs(prev => {
