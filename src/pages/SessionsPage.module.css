@@ -633,6 +633,29 @@
   overflow: hidden;
 }
 
+.rewindMsgExpanded {
+  font-size: calc(11 * var(--font-scale, 1) * 1px);
+  color: var(--tron-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.expandToggle {
+  background: none;
+  border: none;
+  color: var(--tron-cyan);
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  cursor: pointer;
+  padding: 2px 0 0;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.expandToggle:hover {
+  opacity: 1;
+}
+
 .fileItem {
   font-size: calc(11 * var(--font-scale, 1) * 1px);
   padding: 3px 0;

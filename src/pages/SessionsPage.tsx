@@ -78,6 +78,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [transferContent, setTransferContent] = useState<string | null>(null)
   const [copiedResume, setCopiedResume] = useState(false)
   const [copiedTransfer, setCopiedTransfer] = useState<string | null>(null)
+  const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set())
 
   // Sync localTags, localNotes, and transfers when selected session changes
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     setTransfers([])
     setExpandedTransfer(null)
     setTransferContent(null)
+    setExpandedMsgs(new Set())
     if (selectedSession) {
       window.gridwatchAPI.listTransfers(selectedSession.id).then(setTransfers)
     }
@@ -672,18 +674,34 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                 PROMPT HISTORY ({selectedSession.userMessages.length})
                 <span className={styles.infoTip} data-tip="Every message you typed in this session, parsed from events.jsonl. Shown newest first.">ⓘ</span>
               </div>
-              {[...selectedSession.userMessages].reverse().map((msg, i) => (
-                <div key={i} className={styles.rewindItem}>
-                  <div className={styles.rewindMsg}>
-                    {msg.content}
-                    {msg.model && (
-                      <span className={`${styles.modelBadge} ${msg.model.includes('opus') ? styles.modelPremium : msg.model.includes('haiku') ? styles.modelFast : ''}`}>
-                        {msg.model.replace('claude-', '').replace('gpt-', '')}
-                      </span>
+              {[...selectedSession.userMessages].reverse().map((msg, i) => {
+                const key = `prompt-${i}`
+                const isExpanded = expandedMsgs.has(key)
+                return (
+                  <div key={i} className={styles.rewindItem}>
+                    <div className={isExpanded ? styles.rewindMsgExpanded : styles.rewindMsg}>
+                      {msg.content}
+                      {msg.model && (
+                        <span className={`${styles.modelBadge} ${msg.model.includes('opus') ? styles.modelPremium : msg.model.includes('haiku') ? styles.modelFast : ''}`}>
+                          {msg.model.replace('claude-', '').replace('gpt-', '')}
+                        </span>
+                      )}
+                    </div>
+                    {msg.content.length > 120 && (
+                      <button
+                        className={styles.expandToggle}
+                        onClick={() => setExpandedMsgs(prev => {
+                          const next = new Set(prev)
+                          isExpanded ? next.delete(key) : next.add(key)
+                          return next
+                        })}
+                      >
+                        {isExpanded ? '▾ Show less' : '▸ Show more'}
+                      </button>
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
@@ -694,16 +712,32 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                 REWIND HISTORY ({selectedSession.rewindSnapshots.length})
                 <span className={styles.infoTip} data-tip="Checkpoint snapshots saved by Copilot CLI at key moments. Each captures the workspace state (files, branch) so you can rewind to that point.">ⓘ</span>
               </div>
-              {selectedSession.rewindSnapshots.map((snap) => (
-                <div key={snap.snapshotId} className={styles.rewindItem}>
-                  <div className={styles.rewindTime}>
-                    {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : '—'}
-                    {snap.gitBranch && ` · ${snap.gitBranch}`}
-                    {` · ${snap.fileCount} files`}
+              {selectedSession.rewindSnapshots.map((snap) => {
+                const key = `rewind-${snap.snapshotId}`
+                const isExpanded = expandedMsgs.has(key)
+                return (
+                  <div key={snap.snapshotId} className={styles.rewindItem}>
+                    <div className={styles.rewindTime}>
+                      {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : '—'}
+                      {snap.gitBranch && ` · ${snap.gitBranch}`}
+                      {` · ${snap.fileCount} files`}
+                    </div>
+                    <div className={isExpanded ? styles.rewindMsgExpanded : styles.rewindMsg}>{snap.userMessage}</div>
+                    {(snap.userMessage?.length ?? 0) > 120 && (
+                      <button
+                        className={styles.expandToggle}
+                        onClick={() => setExpandedMsgs(prev => {
+                          const next = new Set(prev)
+                          isExpanded ? next.delete(key) : next.add(key)
+                          return next
+                        })}
+                      >
+                        {isExpanded ? '▾ Show less' : '▸ Show more'}
+                      </button>
+                    )}
                   </div>
-                  <div className={styles.rewindMsg}>{snap.userMessage}</div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
