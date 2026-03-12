@@ -16,8 +16,8 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 ## ✨ Features
 
 - 📋 **Sessions overview** — browse all Copilot CLI sessions with live status, token utilisation, and last prompt
-- 🔍 **Search & filtering** — full-text search, multi-select tag filtering, and session type filter (All / Research / Coding)
-- 🔬 **Research session detection** — automatically identifies research sessions with a visual RESEARCH badge
+- 🔍 **Search & filtering** — full-text search, multi-select tag filtering, and session type filter (All / Research / Review / Coding)
+- 🔬 **Session type detection** — automatically identifies research sessions (RESEARCH badge) and code review sessions (REVIEW badge, purple) by detecting Copilot's `code-review` agent usage
 - 📄 **Pagination** — sessions list paged at 20 per page for fast loading
 - 💬 **Prompt history** — read every user message from a session's `events.jsonl` directly in the UI
 - 📈 **Token usage graphs** — line charts tracking peak context window usage over time with 1D / 1W / 1M / ALL time range filters
@@ -26,7 +26,7 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 - 🟩 **Activity heatmap** — GitHub-style contribution grid showing your session activity over 52 weeks
 - ⚡ **AI Insights** — analyse your sessions with OpenAI to get prompt quality scores and improvement suggestions
 - 🏷️ **Tagging** — add, remove, and filter sessions by custom tags
-- ✦ **Skills management** — browse, create, edit, duplicate, delete, and search your Copilot CLI skills (`~/.copilot/skills/`). View rendered markdown with Tron-themed styling, toggle skills on/off, rename folders, import from files or folders, and export as zip archives
+- ✦ **Skills management** — browse, create, edit, duplicate, delete, and search your Copilot CLI skills (`~/.copilot/skills/`). View rendered markdown with Tron-themed styling, toggle skills on/off, rename folders, import from files or folders, and export as zip archives. Tag skills with custom labels and filter by tags
 - ◈ **MCP server dashboard** — view all installed Model Context Protocol servers (local stdio and remote HTTP), enable/disable servers to manage context window bloat, browse their full tool catalogues grouped by category, see environment variables (with secret masking), connection times, and command details
 - ✏️ **Rename sessions** — give sessions a meaningful name beyond the auto-generated summary
 - 🗑️ **Archive / Delete** — safely archive or permanently remove old sessions (guards against deleting active sessions)
@@ -176,6 +176,7 @@ GridWatch reads exclusively from local files — no network requests are made ex
 | Token usage & compaction | `~/.copilot/logs/process-<timestamp>-<pid>.log` |
 | Archived sessions | `~/.copilot/session-state-archived/<uuid>/` (moved here by GridWatch archive) |
 | Session tags / custom data | `~/.copilot/session-state/<uuid>/gridwatch.json` (written by GridWatch) |
+| Skill tags / custom data | `~/.copilot/skills/<name>/gridwatch.json` (written by GridWatch) |
 | Copilot skills | `~/.copilot/skills/<name>/SKILL.md` (read/write for skill management) |
 | MCP server config | `~/.copilot/mcp-config.json` (local MCP server definitions, read/write for enable/disable toggle) |
 | Disabled MCP servers | `~/.copilot/gridwatch-mcp-disabled.json` (written by GridWatch when servers are toggled off) |

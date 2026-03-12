@@ -44,6 +44,7 @@ Renderer (src/)
 | File | Contents |
 |---|---|
 | `~/.copilot/session-state/<uuid>/gridwatch.json` | `{ "tags": ["tag1", "tag2"] }` |
+| `~/.copilot/skills/<name>/gridwatch.json` | `{ "tags": ["tag1", "tag2"] }` — skill tags, same format as session tags |
 | `~/.copilot/skills-disabled/<name>/` | Skills moved here when disabled via GridWatch toggle |
 | `localStorage` (renderer) | `gridwatch-settings` — zoom, fontSize, spacing |
 
@@ -67,7 +68,7 @@ gridwatch/
 │   │   ├── SessionsPage.tsx      ← session list + detail panel (rename/archive/delete/tags/history)
 │   │   ├── TokensPage.tsx        ← token usage charts (line + bar + per-session table)
 │   │   ├── ActivityPage.tsx      ← heatmap, top repos, tool usage, day-of-week chart
-│   │   ├── SkillsPage.tsx        ← Copilot skills browser and editor (CRUD/import/export/toggle)
+│   │   ├── SkillsPage.tsx        ← Copilot skills browser and editor (CRUD/import/export/toggle/tags)
 │   │   └── SettingsPage.tsx      ← UI scale / font size / density; applySettings(), loadSettings()
 │   ├── types/
 │   │   ├── session.ts            ← SessionData, TokenDataPoint, CompactionEvent, RewindSnapshot interfaces
@@ -114,6 +115,7 @@ gridwatch/
 | `toggleSkill(name)` | `skills:toggle` | Moves between `skills/` and `skills-disabled/` |
 | `exportSkill(name)` | `skills:export` | Creates a zip archive via save dialog |
 | `importSkill()` | `skills:import` | Opens file/folder dialog, copies into `skills/` |
+| `setSkillTags(name, tags[])` | `skills:set-tags` | Writes/merges tags into skill's `gridwatch.json` |
 
 **Skill name validation:** lowercase alphanumeric and hyphens only (`/^[a-z0-9][a-z0-9-]*$/`).
 
@@ -135,6 +137,7 @@ interface SkillData {
   modifiedAt: string        // most recent file mtime
   usageCount?: number       // from session event cross-reference
   lastUsed?: string         // ISO date of last usage
+  tags: string[]            // from gridwatch.json in the skill directory
 }
 
 interface SkillFile {
@@ -174,6 +177,7 @@ interface SessionData {
   tokenHistory: TokenDataPoint[]
   compactions: CompactionEvent[]  // parsed from CompactionProcessor log lines
   isResearch: boolean             // true if first user.message starts with "Researching: "
+  isReview: boolean               // true if events.jsonl contains "agent_type":"code-review"
   researchReports: string[]       // full paths to markdown reports in session's research/ dir
 }
 
