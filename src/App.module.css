@@ -71,7 +71,7 @@
 .navItemActive {
   color: var(--tron-cyan);
   border-left-color: var(--tron-orange);
-  background: rgba(0, 245, 255, 0.04);
+  background: color-mix(in srgb, var(--tron-cyan) 4%, transparent);
   text-shadow: var(--tron-glow-cyan);
 }
 
@@ -129,18 +129,18 @@
   align-items: center;
   gap: 12px;
   padding: 6px 16px;
-  background: rgba(255, 102, 0, 0.12);
-  border-bottom: 1px solid rgba(255, 102, 0, 0.3);
+  background: color-mix(in srgb, var(--tron-orange) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--tron-orange) 30%, transparent);
   font-size: calc(11 * var(--font-scale, 1) * 1px);
   letter-spacing: 1px;
-  color: #ff6600;
+  color: var(--tron-orange);
   flex-shrink: 0;
 }
 
 .updateBtn {
   background: none;
-  border: 1px solid #ff6600;
-  color: #ff6600;
+  border: 1px solid var(--tron-orange);
+  color: var(--tron-orange);
   font-family: inherit;
   font-size: calc(10 * var(--font-scale, 1) * 1px);
   letter-spacing: 2px;
@@ -150,20 +150,20 @@
 }
 
 .updateBtn:hover {
-  background: #ff6600;
-  color: #050510;
+  background: var(--tron-orange);
+  color: var(--tron-bg);
 }
 
 .updateDismiss {
   margin-left: auto;
   background: none;
   border: none;
-  color: rgba(255, 102, 0, 0.6);
+  color: color-mix(in srgb, var(--tron-orange) 60%, transparent);
   font-size: calc(14 * var(--font-scale, 1) * 1px);
   cursor: pointer;
   padding: 0 4px;
 }
 
 .updateDismiss:hover {
-  color: #ff6600;
+  color: var(--tron-orange);
 }

@@ -33,7 +33,7 @@
 .listCount {
   font-size: calc(10 * var(--font-scale, 1) * 1px);
   color: var(--tron-text-dim);
-  background: rgba(0, 245, 255, 0.08);
+  background: color-mix(in srgb, var(--tron-cyan) 8%, transparent);
   border: 1px solid var(--tron-border);
   padding: 1px 7px;
   border-radius: 3px;
@@ -77,12 +77,12 @@
 
 .serverCard:hover {
   border-color: var(--tron-cyan);
-  background: rgba(0, 245, 255, 0.03);
+  background: var(--tron-grid-line);
 }
 
 .serverCardActive {
   border-color: var(--tron-cyan);
-  background: rgba(0, 245, 255, 0.06);
+  background: color-mix(in srgb, var(--tron-cyan) 6%, transparent);
   box-shadow: var(--tron-glow-cyan);
 }
 
@@ -175,7 +175,7 @@
   align-items: baseline;
   gap: 10px;
   padding: 5px 0;
-  border-bottom: 1px solid rgba(26, 42, 74, 0.4);
+  border-bottom: 1px solid color-mix(in srgb, var(--tron-border) 40%, transparent);
 }
 
 .fieldLabel {
@@ -221,7 +221,7 @@
 }
 
 .toolGroupHeader:hover {
-  background: rgba(0, 245, 255, 0.04);
+  background: color-mix(in srgb, var(--tron-cyan) 4%, transparent);
 }
 
 .toolGroupChevron {
@@ -241,7 +241,7 @@
 .toolGroupCount {
   font-size: calc(9 * var(--font-scale, 1) * 1px);
   color: var(--tron-text-dim);
-  background: rgba(0, 245, 255, 0.06);
+  background: color-mix(in srgb, var(--tron-cyan) 6%, transparent);
   border: 1px solid var(--tron-border);
   padding: 0 5px;
   border-radius: 3px;
@@ -364,8 +364,24 @@
   padding: 5px 8px;
   margin-bottom: 8px;
   border-left: 2px solid var(--tron-orange);
-  background: rgba(255, 102, 0, 0.04);
+  background: color-mix(in srgb, var(--tron-orange) 4%, transparent);
   letter-spacing: 0.3px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: var(--tron-text-dim);
+  font-size: calc(11 * var(--font-scale, 1) * 1px);
+  letter-spacing: 2px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 

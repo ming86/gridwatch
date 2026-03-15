@@ -60,7 +60,7 @@
 .option {
   padding: 8px 10px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(0, 245, 255, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--tron-cyan) 5%, transparent);
   transition: background 0.1s;
 }
 
@@ -69,7 +69,7 @@
 }
 
 .optionHighlight {
-  background: rgba(0, 245, 255, 0.08);
+  background: color-mix(in srgb, var(--tron-cyan) 8%, transparent);
 }
 
 .optionSelected {

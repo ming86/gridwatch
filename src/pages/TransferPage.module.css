@@ -81,8 +81,8 @@
 }
 
 .contextAvailable {
-  border-color: rgba(0, 245, 255, 0.3);
-  background: rgba(0, 245, 255, 0.04);
+  border-color: color-mix(in srgb, var(--tron-cyan) 30%, transparent);
+  background: color-mix(in srgb, var(--tron-cyan) 4%, transparent);
 }
 
 .contextEmpty {
@@ -150,9 +150,9 @@
 }
 
 .errorPanel {
-  background: rgba(255, 34, 68, 0.08);
-  border: 1px solid rgba(255, 34, 68, 0.3);
-  color: #ff6666;
+  background: color-mix(in srgb, var(--tron-error) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tron-error) 30%, transparent);
+  color: var(--tron-error);
   padding: 10px 14px;
   font-size: calc(11 * var(--font-scale, 1) * 1px);
   letter-spacing: 0.5px;
@@ -160,8 +160,8 @@
 }
 
 .successPanel {
-  background: rgba(0, 245, 255, 0.06);
-  border: 1px solid rgba(0, 245, 255, 0.3);
+  background: color-mix(in srgb, var(--tron-cyan) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tron-cyan) 30%, transparent);
   color: var(--tron-cyan);
   padding: 10px 14px;
   font-size: calc(11 * var(--font-scale, 1) * 1px);

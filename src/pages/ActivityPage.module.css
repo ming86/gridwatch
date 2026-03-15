@@ -50,8 +50,8 @@
   padding: 20px;
   margin-bottom: 16px;
   background-image:
-    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(var(--tron-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tron-grid-line) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -129,11 +129,11 @@
 
 .tooltip {
   position: fixed;
-  background: #0a0e1f;
-  border: 1px solid #1a2a4a;
+  background: var(--tron-panel);
+  border: 1px solid var(--tron-border);
   padding: 4px 8px;
   font-size: calc(10 * var(--font-scale, 1) * 1px);
-  color: #c0e8ff;
+  color: var(--tron-text);
   letter-spacing: 1px;
   pointer-events: none;
   z-index: 1000;
@@ -154,7 +154,7 @@
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  border-bottom: 1px solid rgba(26, 42, 74, 0.5);
+  border-bottom: 1px solid color-mix(in srgb, var(--tron-border) 50%, transparent);
   overflow: hidden;
   min-height: 30px;
 }
@@ -206,7 +206,7 @@
   padding: 20px;
   margin-bottom: 16px;
   background-image:
-    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(var(--tron-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tron-grid-line) 1px, transparent 1px);
   background-size: 20px 20px;
 }

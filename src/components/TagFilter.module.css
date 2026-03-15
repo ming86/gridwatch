@@ -36,7 +36,7 @@
 }
 
 .tagFilterChip {
-  background: rgba(0, 245, 255, 0.05);
+  background: color-mix(in srgb, var(--tron-cyan) 5%, transparent);
   border: 1px solid var(--tron-border);
   color: var(--tron-text-dim);
   font-family: inherit;
@@ -54,7 +54,7 @@
 }
 
 .tagFilterChipSelected {
-  background: rgba(0, 245, 255, 0.15);
+  background: color-mix(in srgb, var(--tron-cyan) 15%, transparent);
   border-color: var(--tron-cyan);
   color: var(--tron-cyan);
   text-shadow: var(--tron-glow-cyan);

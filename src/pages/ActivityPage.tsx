@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import type { SessionData } from '../types/session'
 import TagFilter, { filterByTags } from '../components/TagFilter'
+import { useThemeColors } from '../hooks/useThemeColors'
 import styles from './ActivityPage.module.css'
 
 interface Props {
@@ -21,13 +22,13 @@ const TooltipContent = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#0a0e1f',
-      border: '1px solid #1a2a4a',
+      background: 'var(--tron-panel)',
+      border: '1px solid var(--tron-border)',
       padding: '8px 12px',
       fontFamily: 'inherit',
       fontSize: 11,
     }}>
-      <div style={{ color: '#4a7a9b', marginBottom: 4 }}>{label}</div>
+      <div style={{ color: 'var(--tron-text-dim)', marginBottom: 4 }}>{label}</div>
       {payload.map((p: { name: string; value: number; color: string }, i: number) => (
         <div key={i} style={{ color: p.color }}>
           {p.name}: {p.value}
@@ -44,14 +45,14 @@ const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', '']
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function getCellColor(count: number): string {
-  if (count === 0) return 'rgba(26,42,74,0.4)'
-  if (count === 1) return 'rgba(0,128,255,0.35)'
-  if (count <= 3) return 'rgba(0,128,255,0.6)'
+  if (count === 0) return 'var(--tron-border)'
+  if (count === 1) return 'color-mix(in srgb, var(--tron-blue) 35%, transparent)'
+  if (count <= 3) return 'color-mix(in srgb, var(--tron-blue) 60%, transparent)'
   return 'var(--tron-cyan)'
 }
 
 function getCellShadow(count: number): string | undefined {
-  if (count >= 4) return '0 0 6px rgba(0,245,255,0.6)'
+  if (count >= 4) return 'var(--tron-glow-cyan)'
   return undefined
 }
 
@@ -87,6 +88,7 @@ interface HeatmapTooltipState {
 function ActivityPage({ sessions }: Props) {
   const [tooltip, setTooltip] = useState<HeatmapTooltipState | null>(null)
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
+  const colors = useThemeColors()
 
   const filtered = useMemo(() => filterByTags(sessions, selectedTags), [sessions, selectedTags])
 
@@ -257,7 +259,7 @@ function ActivityPage({ sessions }: Props) {
                 className={styles.fillBar}
                 style={{
                   width: `${(count / maxRepoCount) * 100}%`,
-                  background: 'rgba(0,128,255,0.15)',
+                  background: 'color-mix(in srgb, var(--tron-blue) 15%, transparent)',
                 }}
               />
               <div className={`${styles.rankNum} ${idx === 0 ? styles.rankNumFirst : ''}`}>
@@ -283,7 +285,7 @@ function ActivityPage({ sessions }: Props) {
                 className={styles.fillBar}
                 style={{
                   width: `${(count / maxToolCount) * 100}%`,
-                  background: 'rgba(0,245,255,0.1)',
+                  background: 'color-mix(in srgb, var(--tron-cyan) 10%, transparent)',
                 }}
               />
               <div className={`${styles.rankNum} ${idx === 0 ? styles.rankNumFirst : ''}`}>
@@ -301,11 +303,11 @@ function ActivityPage({ sessions }: Props) {
         <div className={styles.sectionTitle}>SESSIONS BY DAY OF WEEK</div>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={dayOfWeekData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-            <CartesianGrid stroke="#1a2a4a" strokeDasharray="3 3" />
-            <XAxis dataKey="name" tick={{ fill: '#4a7a9b', fontSize: 10 }} />
-            <YAxis tick={{ fill: '#4a7a9b', fontSize: 10 }} allowDecimals={false} />
+            <CartesianGrid stroke={colors.border} strokeDasharray="3 3" />
+            <XAxis dataKey="name" tick={{ fill: colors.textDim, fontSize: 10 }} />
+            <YAxis tick={{ fill: colors.textDim, fontSize: 10 }} allowDecimals={false} />
             <Tooltip content={<TooltipContent />} />
-            <Bar dataKey="count" name="Sessions" fill="#0080ff" fillOpacity={0.8} />
+            <Bar dataKey="count" name="Sessions" fill={colors.blue} fillOpacity={0.8} />
           </BarChart>
         </ResponsiveContainer>
       </div>

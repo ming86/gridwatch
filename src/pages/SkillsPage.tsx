@@ -25,6 +25,8 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
   const [dialogDesc, setDialogDesc] = useState('')
   const [dialogError, setDialogError] = useState('')
   const editorRef = useRef<HTMLTextAreaElement>(null)
+  const [loading, setLoading] = useState(true)
+  const [fileLoading, setFileLoading] = useState(false)
 
   // Tag state
   const [localTags, setLocalTags] = useState<string[]>([])
@@ -40,7 +42,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
   }, [])
 
   useEffect(() => {
-    loadSkills()
+    loadSkills().finally(() => setLoading(false))
     const interval = setInterval(loadSkills, 30_000)
     return () => clearInterval(interval)
   }, [loadSkills])
@@ -53,13 +55,14 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
     if (!selected) return
     setEditing(false)
     setUnsaved(false)
+    setFileLoading(true)
     window.gridwatchAPI.getSkillFile(selected.name, activeFile).then((content) => {
       setFileContent(content ?? '')
       setEditorContent(content ?? '')
     }).catch(() => {
       setFileContent('')
       setEditorContent('')
-    })
+    }).finally(() => setFileLoading(false))
   }, [selected?.name, activeFile])
 
   // Keep selected in sync with skills list
@@ -83,7 +86,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
     const next = [...localTags, trimmed]
     setLocalTags(next)
     await window.gridwatchAPI.setSkillTags(selected.name, next)
-    loadSkills()
+    setSkills(prev => prev.map(s => s.name === selected.name ? { ...s, tags: next } : s))
   }
 
   const removeTag = async (tag: string) => {
@@ -91,7 +94,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
     const next = localTags.filter((t) => t !== tag)
     setLocalTags(next)
     await window.gridwatchAPI.setSkillTags(selected.name, next)
-    loadSkills()
+    setSkills(prev => prev.map(s => s.name === selected.name ? { ...s, tags: next } : s))
   }
 
   const allTags = useMemo(() => Array.from(
@@ -109,7 +112,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
 
   const clearTagFilter = () => setSelectedTags(new Set())
 
-  const filtered = skills.filter((s) => {
+  const filtered = useMemo(() => skills.filter((s) => {
     if (selectedTags.size > 0) {
       const skillTags = s.tags ?? []
       for (const tag of selectedTags) {
@@ -122,7 +125,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
       || s.description.toLowerCase().includes(q)
       || s.name.toLowerCase().includes(q)
       || (s.tags ?? []).some((t) => t.toLowerCase().includes(q))
-  })
+  }), [skills, selectedTags, search])
 
   const handleSelectSkill = (skill: SkillData) => {
     if (unsaved && !confirm('You have unsaved changes. Discard?')) return
@@ -322,7 +325,8 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
           </div>
         )}
         <div className={styles.list}>
-          {filtered.length === 0 && (
+          {loading && <div className={styles.loading}>LOADING...</div>}
+          {!loading && filtered.length === 0 && (
             <div className={styles.emptyState}>
               {skills.length === 0 ? 'NO SKILLS FOUND' : 'NO MATCHING SKILLS'}
             </div>
@@ -444,7 +448,9 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
           </div>
 
           {/* Content */}
-          {editing ? (
+          {fileLoading ? (
+            <div className={styles.loading}>LOADING...</div>
+          ) : editing ? (
             <div className={styles.editorWrap}>
               {unsaved && (
                 <div className={styles.unsavedBanner}>

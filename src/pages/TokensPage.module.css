@@ -44,8 +44,8 @@
   padding: 20px;
   margin-bottom: calc(var(--density-padding) + 6px);
   background-image:
-    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(var(--tron-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tron-grid-line) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -108,7 +108,7 @@
 }
 
 .tableRow:hover {
-  background: rgba(0, 245, 255, 0.03) !important;
+  background: var(--tron-grid-line) !important;
 }
 
 .tdSummary {
@@ -144,14 +144,14 @@
 .miniBarTrack {
   width: 100%;
   height: 4px;
-  background: rgba(26, 42, 74, 0.5);
+  background: color-mix(in srgb, var(--tron-border) 50%, transparent);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .miniBarFill {
   height: 100%;
-  background: linear-gradient(90deg, #00f5ff, #0080ff);
+  background: linear-gradient(90deg, var(--tron-cyan), var(--tron-blue));
   border-radius: 2px;
 }
 
@@ -183,4 +183,20 @@
   color: var(--tron-cyan);
   border-color: var(--tron-cyan);
   box-shadow: var(--tron-glow-cyan);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: var(--tron-text-dim);
+  font-size: calc(11 * var(--font-scale, 1) * 1px);
+  letter-spacing: 2px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }

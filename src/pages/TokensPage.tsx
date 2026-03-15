@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import type { SessionData } from '../types/session'
 import TagFilter, { filterByTags } from '../components/TagFilter'
+import { useThemeColors } from '../hooks/useThemeColors'
 import styles from './TokensPage.module.css'
 
 interface Props {
@@ -27,13 +28,13 @@ const TooltipContent = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#0a0e1f',
-      border: '1px solid #1a2a4a',
+      background: 'var(--tron-panel)',
+      border: '1px solid var(--tron-border)',
       padding: '8px 12px',
       fontFamily: 'inherit',
       fontSize: 11,
     }}>
-      <div style={{ color: '#4a7a9b', marginBottom: 4 }}>{label}</div>
+      <div style={{ color: 'var(--tron-text-dim)', marginBottom: 4 }}>{label}</div>
       {payload.map((p: { name: string; value: number; color: string }, i: number) => (
         <div key={i} style={{ color: p.color }}>
           {p.name}: {typeof p.value === 'number' ? p.value.toLocaleString() : p.value}
@@ -58,11 +59,16 @@ function filterByRange<T extends { date: string }>(data: T[], range: TimeRange):
 
 function TokensPage({ sessions }: Props) {
   const [logTokens, setLogTokens] = useState<LogTokenEntry[]>([])
-  const [range, setRange] = useState<TimeRange>('1M')
+  const [range, setRange] = useState<TimeRange>('1D')
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const colors = useThemeColors()
 
   useEffect(() => {
-    window.gridwatchAPI.getLogTokens().then(setLogTokens).catch(() => {})
+    window.gridwatchAPI.getLogTokens()
+      .then(setLogTokens)
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   const filtered = useMemo(() => filterByTags(sessions, selectedTags), [sessions, selectedTags])
@@ -92,7 +98,21 @@ function TokensPage({ sessions }: Props) {
     )
   }, [logTokens, range])
 
+  const sortedSessions = useMemo(
+    () => [...sessionsWithData].sort((a, b) => b.peakTokens - a.peakTokens),
+    [sessionsWithData],
+  )
+
   const hasData = lineData.length > 0
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.pageTitle}>TOKEN USAGE</div>
+        <div className={styles.loading}>LOADING TOKEN DATA...</div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
@@ -135,17 +155,17 @@ function TokensPage({ sessions }: Props) {
           <div className={styles.chartTitle}>PEAK TOKEN USAGE OVER TIME</div>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={lineData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid stroke="#1a2a4a" strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fill: '#4a7a9b', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#4a7a9b', fontSize: 10 }} />
+              <CartesianGrid stroke={colors.border} strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fill: colors.textDim, fontSize: 10 }} />
+              <YAxis tick={{ fill: colors.textDim, fontSize: 10 }} />
               <Tooltip content={<TooltipContent />} />
               <Line
                 type="monotone"
                 dataKey="tokens"
                 name="Tokens"
-                stroke="#00f5ff"
+                stroke={colors.cyan}
                 strokeWidth={2}
-                dot={{ fill: '#ff6600', r: 3 }}
+                dot={{ fill: colors.orange, r: 3 }}
                 activeDot={{ r: 5 }}
               />
             </LineChart>
@@ -154,7 +174,7 @@ function TokensPage({ sessions }: Props) {
         </div>
       )}
 
-      {sessionsWithData.length > 0 && (
+      {sortedSessions.length > 0 && (
         <div className={styles.chartPanel}>
           <div className={styles.chartTitle}>TOKEN USAGE BY SESSION</div>
           <table className={styles.sessionTable}>
@@ -168,9 +188,7 @@ function TokensPage({ sessions }: Props) {
               </tr>
             </thead>
             <tbody>
-              {[...sessionsWithData]
-                .sort((a, b) => b.peakTokens - a.peakTokens)
-                .map((s, i) => {
+              {sortedSessions.map((s, i) => {
                   const pct = (s.peakTokens / 128000) * 100
                   const repo = s.repository || basename(s.cwd)
                   const summary = s.summary || s.lastUserMessage || '—'
@@ -178,7 +196,7 @@ function TokensPage({ sessions }: Props) {
                     <tr
                       key={s.id}
                       className={styles.tableRow}
-                      style={{ background: i % 2 === 1 ? 'rgba(0,245,255,0.02)' : undefined }}
+                      style={{ background: i % 2 === 1 ? 'color-mix(in srgb, var(--tron-cyan) 2%, transparent)' : undefined }}
                     >
                       <td className={styles.tdSummary}>{summary}</td>
                       <td className={styles.tdRepo}>{repo}</td>

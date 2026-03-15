@@ -27,6 +27,7 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [toolSearch, setToolSearch] = useState('')
   const [toggling, setToggling] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const loadServers = useCallback(async () => {
     try {
@@ -46,7 +47,7 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
   }, [loadServers])
 
   useEffect(() => {
-    loadServers()
+    loadServers().finally(() => setLoading(false))
     const interval = setInterval(loadServers, 30_000)
     return () => clearInterval(interval)
   }, [loadServers])
@@ -77,13 +78,13 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
     return groupTools(tools)
   }, [selected?.tools, toolSearch])
 
-  const filtered = servers.filter(s =>
+  const filtered = useMemo(() => servers.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     (s.command ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  ), [servers, search])
 
-  const localServers = filtered.filter(s => s.type === 'local')
-  const remoteServers = filtered.filter(s => s.type === 'remote')
+  const localServers = useMemo(() => filtered.filter(s => s.type === 'local'), [filtered])
+  const remoteServers = useMemo(() => filtered.filter(s => s.type === 'remote'), [filtered])
 
   return (
     <div className={styles.container}>
@@ -105,6 +106,8 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
         <div className={styles.noticeBanner}>
           ⚡ Changes take effect in new sessions
         </div>
+
+        {loading && <div className={styles.loading}>LOADING...</div>}
 
         {localServers.length > 0 && (
           <>

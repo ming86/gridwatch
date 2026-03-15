@@ -101,6 +101,12 @@ const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/
 let sessionsCache: { data: SessionData[]; timestamp: number } | null = null
 const CACHE_TTL = 5_000 // 5 seconds
 
+let logTokensCache: { data: { date: string; tokens: number; utilisation: number }[]; timestamp: number } | null = null
+const LOG_TOKENS_CACHE_TTL = 5_000 // 5 seconds
+
+let mcpServersCache: { data: McpServerData[]; timestamp: number } | null = null
+const MCP_CACHE_TTL = 10_000 // 10 seconds
+
 function invalidateSessionsCache() {
   sessionsCache = null
 }
@@ -440,6 +446,9 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
 ipcMain.handle(
   'sessions:get-log-tokens',
   async (): Promise<{ date: string; tokens: number; utilisation: number }[]> => {
+    if (logTokensCache && Date.now() - logTokensCache.timestamp < LOG_TOKENS_CACHE_TTL) {
+      return logTokensCache.data
+    }
     try {
       const logDir = path.join(os.homedir(), '.copilot', 'logs')
       if (!fs.existsSync(logDir)) return []
@@ -476,6 +485,7 @@ ipcMain.handle(
       }
 
       results.sort((a, b) => a.date.localeCompare(b.date))
+      logTokensCache = { data: results, timestamp: Date.now() }
       return results
     } catch {
       return []
@@ -1282,6 +1292,9 @@ function parseMcpEntry(name: string, def: unknown, enabled: boolean): McpServerD
 }
 
 ipcMain.handle('mcp:get-servers', async (): Promise<McpServerData[]> => {
+  if (mcpServersCache && Date.now() - mcpServersCache.timestamp < MCP_CACHE_TTL) {
+    return mcpServersCache.data
+  }
   try {
     const servers: McpServerData[] = []
 
@@ -1375,6 +1388,7 @@ ipcMain.handle('mcp:get-servers', async (): Promise<McpServerData[]> => {
       }
     }
 
+    mcpServersCache = { data: servers, timestamp: Date.now() }
     return servers
   } catch {
     return []
@@ -1406,6 +1420,7 @@ ipcMain.handle('mcp:toggle-server', async (_e, serverName: string): Promise<{ ok
       config[configKey] = mcpServers
       fs.writeFileSync(mcpConfigPath, JSON.stringify(config, null, 2) + '\n', 'utf-8')
       fs.writeFileSync(mcpDisabledPath, JSON.stringify(disabled, null, 2) + '\n', 'utf-8')
+      mcpServersCache = null
       return { ok: true, enabled: false }
     } else if (serverName in disabled) {
       // Enable: move from disabled store back to config
@@ -1418,6 +1433,7 @@ ipcMain.handle('mcp:toggle-server', async (_e, serverName: string): Promise<{ ok
       } else {
         fs.writeFileSync(mcpDisabledPath, JSON.stringify(disabled, null, 2) + '\n', 'utf-8')
       }
+      mcpServersCache = null
       return { ok: true, enabled: true }
     }
 
