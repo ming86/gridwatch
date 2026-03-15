@@ -46,6 +46,7 @@ Renderer (src/)
 | `~/.copilot/session-state/<uuid>/gridwatch.json` | `{ "tags": ["tag1", "tag2"] }` |
 | `~/.copilot/skills/<name>/gridwatch.json` | `{ "tags": ["tag1", "tag2"] }` — skill tags, same format as session tags |
 | `~/.copilot/skills-disabled/<name>/` | Skills moved here when disabled via GridWatch toggle |
+| `~/.copilot/gridwatch-mcp-tools-cache.json` | Disk-persisted cache of MCP tool lists queried via JSON-RPC `tools/list` |
 | `localStorage` (renderer) | `gridwatch-settings` — zoom, fontSize, spacing |
 
 ---

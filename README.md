@@ -180,7 +180,7 @@ GridWatch reads exclusively from local files — no network requests are made ex
 | Copilot skills | `~/.copilot/skills/<name>/SKILL.md` (read/write for skill management) |
 | MCP server config | `~/.copilot/mcp-config.json` (local MCP server definitions, read/write for enable/disable toggle) |
 | Disabled MCP servers | `~/.copilot/gridwatch-mcp-disabled.json` (written by GridWatch when servers are toggled off) |
-| MCP tool discovery | `~/.copilot/logs/process-*.log` (tool names and connection times parsed from logs) |
+| MCP tool discovery | MCP servers queried directly via JSON-RPC `tools/list` (spawns each local server briefly); results cached to `~/.copilot/gridwatch-mcp-tools-cache.json` |
 | Disabled skills | `~/.copilot/skills-disabled/<name>/` (moved here when toggled off) |
 | Encrypted API token | `~/.copilot/gridwatch-token.enc` (encrypted via OS keychain) |
 | Update check | `api.github.com/repos/faesel/gridwatch/releases/latest` (on startup only) |

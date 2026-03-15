@@ -1273,6 +1273,99 @@ app.whenReady().then(() => {
 const mcpConfigPath = path.join(os.homedir(), '.copilot', 'mcp-config.json')
 const mcpDisabledPath = path.join(os.homedir(), '.copilot', 'gridwatch-mcp-disabled.json')
 
+// Persistent cache for MCP tool lists — backed by disk file
+const mcpToolsCachePath = path.join(os.homedir(), '.copilot', 'gridwatch-mcp-tools-cache.json')
+const mcpToolsCache = new Map<string, { tools: string[]; timestamp: number }>()
+const MCP_TOOLS_CACHE_TTL = 300_000 // 5 minutes — tools rarely change
+let mcpToolsCacheLoaded = false
+
+function loadToolsCacheFromDisk(): void {
+  if (mcpToolsCacheLoaded) return
+  mcpToolsCacheLoaded = true
+  try {
+    if (fs.existsSync(mcpToolsCachePath)) {
+      const data = JSON.parse(fs.readFileSync(mcpToolsCachePath, 'utf-8')) as Record<string, { tools: string[]; timestamp: number }>
+      for (const [k, v] of Object.entries(data)) {
+        mcpToolsCache.set(k, v)
+      }
+    }
+  } catch { /* ignore corrupt cache */ }
+}
+
+function saveToolsCacheToDisk(): void {
+  try {
+    const obj: Record<string, { tools: string[]; timestamp: number }> = {}
+    for (const [k, v] of mcpToolsCache) obj[k] = v
+    fs.writeFileSync(mcpToolsCachePath, JSON.stringify(obj, null, 2), 'utf-8')
+  } catch { /* ignore write errors */ }
+}
+
+// Track whether a background refresh is already in progress
+let mcpToolsRefreshing = false
+
+/** Spawn an MCP server and query its tool list via JSON-RPC over stdio */
+function queryMcpTools(command: string, args: string[], env: Record<string, string>, timeoutMs = 15_000): Promise<string[]> {
+  return new Promise((resolve) => {
+    const { spawn } = require('child_process') as typeof import('child_process')
+
+    // Resolve ${VAR} env references from process.env
+    const resolvedEnv: Record<string, string | undefined> = { ...process.env }
+    for (const [k, v] of Object.entries(env)) {
+      const match = /^\$\{(.+)\}$/.exec(v)
+      resolvedEnv[k] = match ? (process.env[match[1]] ?? '') : v
+    }
+
+    let proc: import('child_process').ChildProcess
+    try {
+      proc = spawn(command, args, { env: resolvedEnv as NodeJS.ProcessEnv, stdio: ['pipe', 'pipe', 'ignore'] })
+    } catch {
+      return resolve([])
+    }
+
+    let buffer = ''
+    let initDone = false
+    const tools: string[] = []
+    const timer = setTimeout(() => { try { proc.kill() } catch {} resolve(tools) }, timeoutMs)
+
+    proc.stdout?.on('data', (chunk: Buffer) => {
+      buffer += chunk.toString()
+      // JSON-RPC messages are newline-delimited
+      let nl: number
+      while ((nl = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, nl).trim()
+        buffer = buffer.slice(nl + 1)
+        if (!line) continue
+        try {
+          const msg = JSON.parse(line)
+          if (!initDone && msg.id === 1) {
+            // Initialize response received — now request tools/list
+            initDone = true
+            const listReq = JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n'
+            proc.stdin?.write(listReq)
+          } else if (msg.id === 2 && msg.result?.tools) {
+            for (const t of msg.result.tools) {
+              if (t.name) tools.push(t.name)
+            }
+            clearTimeout(timer)
+            try { proc.kill() } catch {}
+            resolve(tools)
+          }
+        } catch { /* not valid JSON yet */ }
+      }
+    })
+
+    proc.on('error', () => { clearTimeout(timer); resolve(tools) })
+    proc.on('exit', () => { clearTimeout(timer); resolve(tools) })
+
+    // Send initialize request
+    const initReq = JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'gridwatch', version: '1.0' } }
+    }) + '\n'
+    proc.stdin?.write(initReq)
+  })
+}
+
 function parseMcpEntry(name: string, def: unknown, enabled: boolean): McpServerData {
   const d = def as Record<string, unknown>
   const envObj = (d.env ?? {}) as Record<string, string>
@@ -1299,12 +1392,15 @@ ipcMain.handle('mcp:get-servers', async (): Promise<McpServerData[]> => {
     const servers: McpServerData[] = []
 
     // Read enabled local MCP servers from mcp-config.json
+    const serverEnvs = new Map<string, Record<string, string>>()
     if (fs.existsSync(mcpConfigPath)) {
       const raw = fs.readFileSync(mcpConfigPath, 'utf-8')
       const config = JSON.parse(raw)
       const mcpServers = config.mcpServers ?? config.servers ?? {}
       for (const [name, def] of Object.entries(mcpServers)) {
         servers.push(parseMcpEntry(name, def, true))
+        const d = def as Record<string, unknown>
+        if (d.env) serverEnvs.set(name, d.env as Record<string, string>)
       }
     }
 
@@ -1319,72 +1415,107 @@ ipcMain.handle('mcp:get-servers', async (): Promise<McpServerData[]> => {
       } catch { /* ignore malformed disabled file */ }
     }
 
-    // Scan log files for remote servers, tool names, and connection times
+    // Apply disk-cached tools immediately (non-blocking)
+    loadToolsCacheFromDisk()
+    const serversNeedingRefresh: { server: McpServerData; env: Record<string, string> }[] = []
+    for (const server of servers) {
+      if (server.enabled && server.type === 'local' && server.command) {
+        const cached = mcpToolsCache.get(server.name)
+        if (cached) {
+          server.tools = cached.tools
+          server.toolCount = cached.tools.length
+        }
+        // Schedule refresh if cache is stale or missing
+        if (!cached || Date.now() - cached.timestamp > MCP_TOOLS_CACHE_TTL) {
+          serversNeedingRefresh.push({ server, env: serverEnvs.get(server.name) ?? {} })
+        }
+      }
+    }
+
+    // Trigger background refresh for stale tools (doesn't block response)
+    if (serversNeedingRefresh.length > 0 && !mcpToolsRefreshing) {
+      mcpToolsRefreshing = true
+      Promise.all(
+        serversNeedingRefresh.map(async ({ server, env }) => {
+          const tools = await queryMcpTools(server.command!, server.args ?? [], env)
+          if (tools.length > 0) {
+            mcpToolsCache.set(server.name, { tools: tools.sort(), timestamp: Date.now() })
+          }
+        })
+      ).then(() => {
+        saveToolsCacheToDisk()
+        mcpServersCache = null // invalidate so next poll picks up fresh tools
+      }).finally(() => { mcpToolsRefreshing = false })
+    }
+
+    // Scan most recent log for remote servers and connection times
     const logsDir = path.join(os.homedir(), '.copilot', 'logs')
     if (fs.existsSync(logsDir)) {
       const logFiles = fs.readdirSync(logsDir)
         .filter(f => f.startsWith('process-') && f.endsWith('.log'))
         .sort().reverse()
-        .slice(0, 5) // scan last 5 log files for broader tool coverage
 
-      const allToolNames = new Set<string>()
       const connectionTimes = new Map<string, number>()
       const seenRemote = new Set<string>()
 
-      for (const logFile of logFiles) {
-        const logContent = fs.readFileSync(path.join(logsDir, logFile), 'utf-8')
+      // Only scan the most recent log for remote servers and connection times
+      if (logFiles[0]) {
+        const logContent = fs.readFileSync(path.join(logsDir, logFiles[0]), 'utf-8')
 
-        // Find remote MCP servers (only from most recent log)
-        if (logFile === logFiles[0]) {
-          const remoteRe = /Starting remote MCP client for (\S+) with url: (\S+)/g
-          let m: RegExpExecArray | null
-          while ((m = remoteRe.exec(logContent)) !== null) {
-            if (!seenRemote.has(m[1])) {
-              seenRemote.add(m[1])
-              servers.push({ name: m[1], type: 'remote', url: m[2], envVars: [], tools: [], enabled: true })
-            }
-          }
-
-          // Find IDE MCP servers
-          const ideRe = /Connected to IDE MCP server: (.+)/g
-          while ((m = ideRe.exec(logContent)) !== null) {
-            const ideName = `ide-${m[1].split('(')[0].trim().toLowerCase().replace(/\s+/g, '-')}`
-            if (!seenRemote.has(ideName)) {
-              seenRemote.add(ideName)
-              servers.push({ name: ideName, type: 'remote', url: m[1].trim(), envVars: [], tools: [], enabled: true })
-            }
-          }
-
-          // Connection times
-          const connRe = /MCP client for (\S+) connected, took (\d+)ms/g
-          while ((m = connRe.exec(logContent)) !== null) {
-            connectionTimes.set(m[1], parseInt(m[2], 10))
+        const remoteRe = /Starting remote MCP client for (\S+) with url: (\S+)/g
+        let m: RegExpExecArray | null
+        while ((m = remoteRe.exec(logContent)) !== null) {
+          if (!seenRemote.has(m[1])) {
+            seenRemote.add(m[1])
+            servers.push({ name: m[1], type: 'remote', url: m[2], envVars: [], tools: [], enabled: true })
           }
         }
 
-        // Collect all MCP-prefixed tool names across log files
-        const serverNames = servers.map(s => s.name)
-        for (const sName of serverNames) {
-          const escaped = sName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const re = new RegExp(escaped + '-[a-zA-Z_]+', 'g')
-          let tm: RegExpExecArray | null
-          while ((tm = re.exec(logContent)) !== null) {
-            allToolNames.add(tm[0])
+        const ideRe = /Connected to IDE MCP server: (.+)/g
+        while ((m = ideRe.exec(logContent)) !== null) {
+          const ideName = `ide-${m[1].split('(')[0].trim().toLowerCase().replace(/\s+/g, '-')}`
+          if (!seenRemote.has(ideName)) {
+            seenRemote.add(ideName)
+            servers.push({ name: ideName, type: 'remote', url: m[1].trim(), envVars: [], tools: [], enabled: true })
           }
+        }
+
+        const connRe = /MCP client for (\S+) connected, took (\d+)ms/g
+        while ((m = connRe.exec(logContent)) !== null) {
+          connectionTimes.set(m[1], parseInt(m[2], 10))
+        }
+
+        // Assign connection times
+        for (const server of servers) {
+          const ct = connectionTimes.get(server.name)
+          if (ct !== undefined) server.connectionTime = ct
         }
       }
 
-      // Assign tools and connection times to servers
-      for (const server of servers) {
-        const prefix = server.name + '-'
-        const serverTools = [...allToolNames]
-          .filter(t => t.startsWith(prefix))
-          .map(t => t.slice(prefix.length))
-          .sort()
-        server.tools = serverTools
-        server.toolCount = serverTools.length
-        const ct = connectionTimes.get(server.name)
-        if (ct !== undefined) server.connectionTime = ct
+      // For remote/IDE servers, fall back to log scanning for tool names
+      const remoteServers = servers.filter(s => s.type === 'remote' && s.tools.length === 0)
+      if (remoteServers.length > 0) {
+        const allToolNames = new Set<string>()
+        for (const logFile of logFiles.slice(0, 10)) {
+          const logContent = fs.readFileSync(path.join(logsDir, logFile), 'utf-8')
+          for (const rs of remoteServers) {
+            const escaped = rs.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            const re = new RegExp(escaped + '-[a-zA-Z_]+', 'g')
+            let tm: RegExpExecArray | null
+            while ((tm = re.exec(logContent)) !== null) {
+              allToolNames.add(tm[0])
+            }
+          }
+        }
+        for (const rs of remoteServers) {
+          const prefix = rs.name + '-'
+          const serverTools = [...allToolNames]
+            .filter(t => t.startsWith(prefix))
+            .map(t => t.slice(prefix.length))
+            .sort()
+          rs.tools = serverTools
+          rs.toolCount = serverTools.length
+        }
       }
     }
 
@@ -1421,6 +1552,8 @@ ipcMain.handle('mcp:toggle-server', async (_e, serverName: string): Promise<{ ok
       fs.writeFileSync(mcpConfigPath, JSON.stringify(config, null, 2) + '\n', 'utf-8')
       fs.writeFileSync(mcpDisabledPath, JSON.stringify(disabled, null, 2) + '\n', 'utf-8')
       mcpServersCache = null
+      mcpToolsCache.delete(serverName)
+      saveToolsCacheToDisk()
       return { ok: true, enabled: false }
     } else if (serverName in disabled) {
       // Enable: move from disabled store back to config
@@ -1434,6 +1567,8 @@ ipcMain.handle('mcp:toggle-server', async (_e, serverName: string): Promise<{ ok
         fs.writeFileSync(mcpDisabledPath, JSON.stringify(disabled, null, 2) + '\n', 'utf-8')
       }
       mcpServersCache = null
+      mcpToolsCache.delete(serverName)
+      saveToolsCacheToDisk()
       return { ok: true, enabled: true }
     }
 
