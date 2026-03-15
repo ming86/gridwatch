@@ -563,6 +563,33 @@
   color: var(--tron-blue);
 }
 
+.tokenEstimate {
+  color: var(--tron-orange);
+}
+
+.tokenSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin: 8px 12px 8px;
+  border: 1px solid color-mix(in srgb, var(--tron-orange) 30%, transparent);
+  background: color-mix(in srgb, var(--tron-orange) 4%, transparent);
+  cursor: default;
+}
+
+.tokenSummaryLabel {
+  font-size: calc(9 * var(--font-scale, 1) * 1px);
+  letter-spacing: 1.5px;
+  color: var(--tron-text-dim);
+}
+
+.tokenSummaryValue {
+  font-size: calc(11 * var(--font-scale, 1) * 1px);
+  color: var(--tron-orange);
+  font-weight: 700;
+}
+
 /* ── Tag filter (list column) ────────────────── */
 .tagFilterToggle {
   background: none;

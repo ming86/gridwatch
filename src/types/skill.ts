@@ -17,4 +17,5 @@ export interface SkillData {
   usageCount?: number;
   lastUsed?: string;
   tags: string[];
+  estimatedTokens: number;
 }

@@ -988,6 +988,15 @@ function scanSkillDir(dirPath: string, enabled: boolean): SkillData | null {
     }
   } catch { /* ignore */ }
 
+  // Estimate token count from total text content (~4 chars per token)
+  let totalChars = 0
+  for (const f of files) {
+    try {
+      totalChars += fs.readFileSync(f.path, 'utf-8').length
+    } catch { /* skip unreadable */ }
+  }
+  const estimatedTokens = Math.round(totalChars / 4)
+
   return {
     name: skillName,
     displayName: frontmatter.displayName,
@@ -998,6 +1007,7 @@ function scanSkillDir(dirPath: string, enabled: boolean): SkillData | null {
     createdAt: new Date(earliestBirth).toISOString(),
     modifiedAt: latestMtime ? new Date(latestMtime).toISOString() : new Date().toISOString(),
     tags,
+    estimatedTokens,
   }
 }
 

@@ -101,6 +101,10 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
     new Set(skills.flatMap((s) => s.tags ?? []))
   ).sort(), [skills])
 
+  const totalEnabledTokens = useMemo(() =>
+    skills.filter(s => s.enabled).reduce((sum, s) => sum + s.estimatedTokens, 0)
+  , [skills])
+
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => {
       const next = new Set(prev)
@@ -324,6 +328,12 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
             )}
           </div>
         )}
+        {!loading && totalEnabledTokens > 0 && (
+          <div className={styles.tokenSummary} title="Total estimated tokens consumed by all enabled skills in each session">
+            <span className={styles.tokenSummaryLabel}>ENABLED SKILLS COST</span>
+            <span className={styles.tokenSummaryValue}>~{totalEnabledTokens.toLocaleString()} tokens</span>
+          </div>
+        )}
         <div className={styles.list}>
           {loading && <div className={styles.loading}>LOADING...</div>}
           {!loading && filtered.length === 0 && (
@@ -346,6 +356,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
               )}
               <div className={styles.cardMeta}>
                 <span>{skill.files.length} file{skill.files.length !== 1 ? 's' : ''}</span>
+                <span className={styles.tokenEstimate}>~{skill.estimatedTokens.toLocaleString()} tokens</span>
                 {skill.usageCount != null && skill.usageCount > 0 && (
                   <span className={styles.usageStat}>{skill.usageCount} use{skill.usageCount !== 1 ? 's' : ''}</span>
                 )}
@@ -374,6 +385,7 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
               {selected.license && <span>License: {selected.license}</span>}
               <span>Modified: {new Date(selected.modifiedAt).toLocaleDateString()}</span>
               {selected.lastUsed && <span>Last used: {new Date(selected.lastUsed).toLocaleDateString()}</span>}
+              <span className={styles.tokenEstimate} title="Estimated tokens consumed in each session's context window">~{selected.estimatedTokens.toLocaleString()} tokens</span>
             </div>
           </div>
 
