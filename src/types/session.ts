@@ -28,6 +28,17 @@ export interface UserMessage {
   timestamp?: string;
 }
 
+export interface ContextCostItem {
+  label: string;
+  path?: string;
+  tokens: number;
+}
+
+export interface ContextCost {
+  items: ContextCostItem[];
+  totalTokens: number;
+}
+
 export interface SessionData {
   id: string;
   cwd: string;
@@ -54,4 +65,5 @@ export interface SessionData {
   isResearch: boolean;
   isReview: boolean;
   researchReports: string[];
+  contextCost?: ContextCost;
 }

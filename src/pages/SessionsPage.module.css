@@ -748,6 +748,43 @@
   color: var(--tron-text);
 }
 
+/* ── Context cost ──────────────────────────────── */
+.contextCostTotal {
+  float: right;
+  color: var(--tron-orange);
+  font-weight: normal;
+}
+
+.contextCostList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contextCostItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 2px solid var(--tron-border);
+  font-size: calc(11 * var(--font-scale, 1) * 1px);
+}
+
+.contextCostLabel {
+  color: var(--tron-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 12px;
+}
+
+.contextCostTokens {
+  color: var(--tron-orange);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .empty {
   padding: 40px;
   color: var(--tron-text-dim);

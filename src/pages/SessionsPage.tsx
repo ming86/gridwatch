@@ -542,6 +542,49 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             )}
           </div>
 
+          {/* Tags */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>TAGS</div>
+            <div className={styles.tagsRow}>
+              {localTags.map((t) => (
+                <span key={t} className={styles.tagChipDetail}>
+                  {t}
+                  <button
+                    className={styles.tagRemove}
+                    onClick={() => removeTag(t)}
+                    aria-label={`Remove tag ${t}`}
+                  >×</button>
+                </span>
+              ))}
+              <input
+                className={styles.tagInput}
+                placeholder="+ add tag"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault()
+                    addTag(tagInput)
+                    setTagInput('')
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>NOTES</div>
+            <textarea
+              className={styles.notesInput}
+              placeholder="Add notes about this session..."
+              value={localNotes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              rows={4}
+              spellCheck={false}
+            />
+          </div>
+
           {/* Tools */}
           {selectedSession.toolsUsed.length > 0 && (
             <div className={styles.section}>
@@ -592,6 +635,28 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             </div>
           )}
 
+          {/* Context cost breakdown */}
+          {selectedSession.contextCost && selectedSession.contextCost.items.length > 0 && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>
+                CONTEXT COST
+                <span className={styles.contextCostTotal}>
+                  ~{selectedSession.contextCost.totalTokens.toLocaleString()} tokens
+                </span>
+              </div>
+              <div className={styles.contextCostList}>
+                {selectedSession.contextCost.items.map((item, i) => (
+                  <div key={i} className={styles.contextCostItem}>
+                    <span className={styles.contextCostLabel}>{item.label}</span>
+                    <span className={styles.contextCostTokens}>
+                      ~{item.tokens.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Compactions */}
           {(selectedSession.compactions ?? []).length > 0 && (
             <div className={styles.section}>
@@ -624,49 +689,6 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
               </div>
             </div>
           )}
-
-          {/* Tags */}
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>TAGS</div>
-            <div className={styles.tagsRow}>
-              {localTags.map((t) => (
-                <span key={t} className={styles.tagChipDetail}>
-                  {t}
-                  <button
-                    className={styles.tagRemove}
-                    onClick={() => removeTag(t)}
-                    aria-label={`Remove tag ${t}`}
-                  >×</button>
-                </span>
-              ))}
-              <input
-                className={styles.tagInput}
-                placeholder="+ add tag"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault()
-                    addTag(tagInput)
-                    setTagInput('')
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>NOTES</div>
-            <textarea
-              className={styles.notesInput}
-              placeholder="Add notes about this session..."
-              value={localNotes}
-              onChange={(e) => handleNotesChange(e.target.value)}
-              rows={4}
-              spellCheck={false}
-            />
-          </div>
 
           {/* Transferred context files */}
           {transfers.length > 0 && (

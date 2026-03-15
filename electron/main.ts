@@ -5,7 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import https from 'node:https'
-import type { SessionData, TokenDataPoint, RewindSnapshot, CompactionEvent } from '../src/types/session'
+import type { SessionData, TokenDataPoint, RewindSnapshot, CompactionEvent, ContextCostItem } from '../src/types/session'
 import type { SkillData, SkillFile } from '../src/types/skill'
 import type { McpServerData, McpEnvVar, McpTool } from '../src/types/mcp'
 
@@ -228,6 +228,38 @@ function readLogTokenHistory(
   }
 }
 
+// ── Context cost estimation helpers ───────────────────────────────────────────
+
+function estimateFileTokens(filePath: string): number {
+  try {
+    if (fs.existsSync(filePath)) {
+      return Math.round(fs.readFileSync(filePath, 'utf-8').length / 4)
+    }
+  } catch { /* skip unreadable */ }
+  return 0
+}
+
+function buildContextCost(
+  projectRoot: string | undefined,
+): { items: ContextCostItem[]; totalTokens: number } {
+  const items: ContextCostItem[] = []
+
+  // System prompt (baseline estimate)
+  items.push({ label: 'System prompt', tokens: 2000 })
+
+  // Instruction files — check gitRoot (or cwd) for .github/copilot-instructions.md
+  if (projectRoot) {
+    const instructionPath = path.join(projectRoot, '.github', 'copilot-instructions.md')
+    const tokens = estimateFileTokens(instructionPath)
+    if (tokens > 0) {
+      items.push({ label: 'copilot-instructions.md', path: instructionPath, tokens })
+    }
+  }
+
+  const totalTokens = items.reduce((sum, i) => sum + i.tokens, 0)
+  return { items, totalTokens }
+}
+
 ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
   // Return cached result if fresh enough
   if (sessionsCache && Date.now() - sessionsCache.timestamp < CACHE_TTL) {
@@ -425,6 +457,9 @@ ipcMain.handle('sessions:get-all', async (): Promise<SessionData[]> => {
             } catch { /* ignore */ }
             return []
           })(),
+          contextCost: buildContextCost(
+            workspace.git_root || workspace.cwd || undefined,
+          ),
         })
       } catch {
         resolve(null)
