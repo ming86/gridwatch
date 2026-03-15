@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { SessionData } from './types/session'
 import styles from './App.module.css'
 import logoWordmark from './assets/logo-wordmark.svg'
+import logoWordmarkPrograms from './assets/logo-wordmark-programs.svg'
 import SessionsPage from './pages/SessionsPage'
 import TokensPage from './pages/TokensPage'
 import ActivityPage from './pages/ActivityPage'
@@ -106,7 +107,7 @@ function App() {
   return (
     <div className={styles.app}>
       <div className={styles.titlebar}>
-        <img src={logoWordmark} alt="GridWatch" />
+        <img src={appSettings.theme === 'programs' ? logoWordmarkPrograms : logoWordmark} alt="GridWatch" />
       </div>
       {update && (
         <div className={styles.updateBanner}>
