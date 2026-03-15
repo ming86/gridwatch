@@ -27,7 +27,7 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 - ⚡ **AI Insights** — analyse your sessions with OpenAI to get prompt quality scores and improvement suggestions
 - 🏷️ **Tagging** — add, remove, and filter sessions by custom tags
 - ✦ **Skills management** — browse, create, edit, duplicate, delete, and search your Copilot CLI skills (`~/.copilot/skills/`). View rendered markdown with Tron-themed styling, toggle skills on/off, rename folders, import from files or folders, and export as zip archives. Tag skills with custom labels and filter by tags
-- ◈ **MCP server dashboard** — view all installed Model Context Protocol servers (local stdio and remote HTTP), enable/disable servers to manage context window bloat, browse their full tool catalogues grouped by category, see environment variables (with secret masking), connection times, and command details
+- ◈ **MCP server dashboard** — view all installed Model Context Protocol servers (local stdio and remote HTTP), enable/disable servers to manage context window bloat, browse their full tool catalogues grouped by category with descriptions and parameter schemas (queried live via JSON-RPC `tools/list`), see environment variables (with secret masking), connection times, and command details
 - ✏️ **Rename sessions** — give sessions a meaningful name beyond the auto-generated summary
 - 🗑️ **Archive / Delete** — safely archive or permanently remove old sessions (guards against deleting active sessions)
 - 📂 **Open in folder** — reveal research reports and modified files in Finder (macOS) or Explorer (Windows)

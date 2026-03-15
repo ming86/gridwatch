@@ -1,16 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { McpServerData } from '../types/mcp'
+import type { McpServerData, McpTool } from '../types/mcp'
 import styles from './McpPage.module.css'
 
-/** Group tool names by category prefix (e.g. jira_, confluence_) */
-function groupTools(tools: string[]): Map<string, string[]> {
-  const groups = new Map<string, string[]>()
+/** Group tools by category prefix (e.g. jira_, confluence_) */
+function groupTools(tools: McpTool[]): Map<string, McpTool[]> {
+  const groups = new Map<string, McpTool[]>()
   for (const tool of tools) {
-    const sep = tool.indexOf('_')
-    const category = sep > 0 ? tool.slice(0, sep) : 'general'
-    const name = sep > 0 ? tool.slice(sep + 1) : tool
+    const sep = tool.name.indexOf('_')
+    const category = sep > 0 ? tool.name.slice(0, sep) : 'general'
     if (!groups.has(category)) groups.set(category, [])
-    groups.get(category)!.push(name)
+    groups.get(category)!.push(tool)
   }
   return groups
 }
@@ -18,6 +17,12 @@ function groupTools(tools: string[]): Map<string, string[]> {
 /** Humanise a snake_case tool name */
 function humanise(name: string): string {
   return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+/** Format a tool's display name (strip category prefix) */
+function displayName(tool: McpTool): string {
+  const sep = tool.name.indexOf('_')
+  return humanise(sep > 0 ? tool.name.slice(sep + 1) : tool.name)
 }
 
 export default function McpPage({ refreshKey }: { refreshKey?: number }) {
@@ -28,6 +33,7 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
   const [toolSearch, setToolSearch] = useState('')
   const [toggling, setToggling] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [expandedTool, setExpandedTool] = useState<string | null>(null)
 
   const loadServers = useCallback(async () => {
     try {
@@ -67,13 +73,15 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
   useEffect(() => {
     setExpandedGroups(new Set())
     setToolSearch('')
+    setExpandedTool(null)
   }, [selected?.name])
 
   // Group tools by category, filtered by tool search
   const toolGroups = useMemo(() => {
-    if (!selected) return new Map<string, string[]>()
+    if (!selected) return new Map<string, McpTool[]>()
     const tools = toolSearch
-      ? selected.tools.filter(t => t.toLowerCase().includes(toolSearch.toLowerCase()))
+      ? selected.tools.filter(t => t.name.toLowerCase().includes(toolSearch.toLowerCase()) ||
+          (t.description ?? '').toLowerCase().includes(toolSearch.toLowerCase()))
       : selected.tools
     return groupTools(tools)
   }, [selected?.tools, toolSearch])
@@ -270,12 +278,53 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
                       </button>
                       {isOpen && (
                         <div className={styles.toolList}>
-                          {tools.map(tool => (
-                            <div key={tool} className={styles.toolItem}>
-                              <span className={styles.toolDot}>·</span>
-                              <span className={styles.toolName}>{humanise(tool)}</span>
-                            </div>
-                          ))}
+                          {tools.map(tool => {
+                            const isExpanded = expandedTool === tool.name
+                            const hasDetails = tool.description || tool.inputSchema
+                            return (
+                              <div key={tool.name} className={styles.toolItem}>
+                                <div
+                                  className={`${styles.toolHeader} ${hasDetails ? styles.toolHeaderClickable : ''}`}
+                                  onClick={() => hasDetails && setExpandedTool(isExpanded ? null : tool.name)}
+                                >
+                                  <span className={styles.toolDot}>{hasDetails ? (isExpanded ? '▾' : '▸') : '·'}</span>
+                                  <span className={styles.toolName}>{displayName(tool)}</span>
+                                  {tool.inputSchema && (
+                                    <span className={styles.paramCount}>
+                                      {Object.keys((tool.inputSchema as Record<string, unknown>).properties ?? {}).length} params
+                                    </span>
+                                  )}
+                                </div>
+                                {isExpanded && (
+                                  <div className={styles.toolDetails}>
+                                    {tool.description && (
+                                      <div className={styles.toolDescription}>{tool.description}</div>
+                                    )}
+                                    {tool.inputSchema && (
+                                      <div className={styles.toolSchema}>
+                                        <div className={styles.toolSchemaTitle}>PARAMETERS</div>
+                                        {Object.entries((tool.inputSchema as Record<string, unknown>).properties ?? {}).map(([pName, pDef]) => {
+                                          const param = pDef as Record<string, unknown>
+                                          const required = ((tool.inputSchema as Record<string, unknown>).required as string[] ?? []).includes(pName)
+                                          return (
+                                            <div key={pName} className={styles.toolParam}>
+                                              <span className={styles.toolParamName}>
+                                                {pName}{required && <span className={styles.toolParamRequired}>*</span>}
+                                              </span>
+                                              <span className={styles.toolParamType}>{(param.type as string) ?? '?'}</span>
+                                              {typeof param.description === 'string' && (
+                                                <span className={styles.toolParamDesc}>{param.description}</span>
+                                              )}
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       )}
                     </div>

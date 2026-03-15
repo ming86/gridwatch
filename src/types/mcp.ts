@@ -3,6 +3,12 @@ export interface McpEnvVar {
   isSecret: boolean
 }
 
+export interface McpTool {
+  name: string
+  description?: string
+  inputSchema?: Record<string, unknown>
+}
+
 export interface McpServerData {
   name: string
   type: 'local' | 'remote'
@@ -11,7 +17,7 @@ export interface McpServerData {
   url?: string
   envVars: McpEnvVar[]
   toolCount?: number
-  tools: string[]
+  tools: McpTool[]
   connectionTime?: number
   enabled: boolean
 }

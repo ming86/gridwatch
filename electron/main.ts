@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import https from 'node:https'
 import type { SessionData, TokenDataPoint, RewindSnapshot, CompactionEvent } from '../src/types/session'
 import type { SkillData, SkillFile } from '../src/types/skill'
-import type { McpServerData, McpEnvVar } from '../src/types/mcp'
+import type { McpServerData, McpEnvVar, McpTool } from '../src/types/mcp'
 
 // Must be set before app is ready so the OS picks it up for dock/taskbar tooltip
 app.setName('GridWatch')
@@ -1275,7 +1275,7 @@ const mcpDisabledPath = path.join(os.homedir(), '.copilot', 'gridwatch-mcp-disab
 
 // Persistent cache for MCP tool lists — backed by disk file
 const mcpToolsCachePath = path.join(os.homedir(), '.copilot', 'gridwatch-mcp-tools-cache.json')
-const mcpToolsCache = new Map<string, { tools: string[]; timestamp: number }>()
+const mcpToolsCache = new Map<string, { tools: McpTool[]; timestamp: number }>()
 const MCP_TOOLS_CACHE_TTL = 300_000 // 5 minutes — tools rarely change
 let mcpToolsCacheLoaded = false
 
@@ -1284,7 +1284,7 @@ function loadToolsCacheFromDisk(): void {
   mcpToolsCacheLoaded = true
   try {
     if (fs.existsSync(mcpToolsCachePath)) {
-      const data = JSON.parse(fs.readFileSync(mcpToolsCachePath, 'utf-8')) as Record<string, { tools: string[]; timestamp: number }>
+      const data = JSON.parse(fs.readFileSync(mcpToolsCachePath, 'utf-8')) as Record<string, { tools: McpTool[]; timestamp: number }>
       for (const [k, v] of Object.entries(data)) {
         mcpToolsCache.set(k, v)
       }
@@ -1294,7 +1294,7 @@ function loadToolsCacheFromDisk(): void {
 
 function saveToolsCacheToDisk(): void {
   try {
-    const obj: Record<string, { tools: string[]; timestamp: number }> = {}
+    const obj: Record<string, { tools: McpTool[]; timestamp: number }> = {}
     for (const [k, v] of mcpToolsCache) obj[k] = v
     fs.writeFileSync(mcpToolsCachePath, JSON.stringify(obj, null, 2), 'utf-8')
   } catch { /* ignore write errors */ }
@@ -1304,7 +1304,7 @@ function saveToolsCacheToDisk(): void {
 let mcpToolsRefreshing = false
 
 /** Spawn an MCP server and query its tool list via JSON-RPC over stdio */
-function queryMcpTools(command: string, args: string[], env: Record<string, string>, timeoutMs = 15_000): Promise<string[]> {
+function queryMcpTools(command: string, args: string[], env: Record<string, string>, timeoutMs = 15_000): Promise<McpTool[]> {
   return new Promise((resolve) => {
     const { spawn } = require('child_process') as typeof import('child_process')
 
@@ -1324,12 +1324,11 @@ function queryMcpTools(command: string, args: string[], env: Record<string, stri
 
     let buffer = ''
     let initDone = false
-    const tools: string[] = []
+    const tools: McpTool[] = []
     const timer = setTimeout(() => { try { proc.kill() } catch {} resolve(tools) }, timeoutMs)
 
     proc.stdout?.on('data', (chunk: Buffer) => {
       buffer += chunk.toString()
-      // JSON-RPC messages are newline-delimited
       let nl: number
       while ((nl = buffer.indexOf('\n')) !== -1) {
         const line = buffer.slice(0, nl).trim()
@@ -1338,13 +1337,18 @@ function queryMcpTools(command: string, args: string[], env: Record<string, stri
         try {
           const msg = JSON.parse(line)
           if (!initDone && msg.id === 1) {
-            // Initialize response received — now request tools/list
             initDone = true
             const listReq = JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n'
             proc.stdin?.write(listReq)
           } else if (msg.id === 2 && msg.result?.tools) {
             for (const t of msg.result.tools) {
-              if (t.name) tools.push(t.name)
+              if (t.name) {
+                tools.push({
+                  name: t.name,
+                  description: t.description ?? undefined,
+                  inputSchema: t.inputSchema ?? undefined,
+                })
+              }
             }
             clearTimeout(timer)
             try { proc.kill() } catch {}
@@ -1357,7 +1361,6 @@ function queryMcpTools(command: string, args: string[], env: Record<string, stri
     proc.on('error', () => { clearTimeout(timer); resolve(tools) })
     proc.on('exit', () => { clearTimeout(timer); resolve(tools) })
 
-    // Send initialize request
     const initReq = JSON.stringify({
       jsonrpc: '2.0', id: 1, method: 'initialize',
       params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'gridwatch', version: '1.0' } }
@@ -1439,7 +1442,7 @@ ipcMain.handle('mcp:get-servers', async (): Promise<McpServerData[]> => {
         serversNeedingRefresh.map(async ({ server, env }) => {
           const tools = await queryMcpTools(server.command!, server.args ?? [], env)
           if (tools.length > 0) {
-            mcpToolsCache.set(server.name, { tools: tools.sort(), timestamp: Date.now() })
+            mcpToolsCache.set(server.name, { tools: tools.sort((a, b) => a.name.localeCompare(b.name)), timestamp: Date.now() })
           }
         })
       ).then(() => {
@@ -1509,10 +1512,10 @@ ipcMain.handle('mcp:get-servers', async (): Promise<McpServerData[]> => {
         }
         for (const rs of remoteServers) {
           const prefix = rs.name + '-'
-          const serverTools = [...allToolNames]
+          const serverTools: McpTool[] = [...allToolNames]
             .filter(t => t.startsWith(prefix))
-            .map(t => t.slice(prefix.length))
-            .sort()
+            .map(t => ({ name: t.slice(prefix.length) }))
+            .sort((a, b) => a.name.localeCompare(b.name))
           rs.tools = serverTools
           rs.toolCount = serverTools.length
         }

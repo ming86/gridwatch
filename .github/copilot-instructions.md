@@ -74,6 +74,7 @@ gridwatch/
 │   ├── types/
 │   │   ├── session.ts            ← SessionData, TokenDataPoint, CompactionEvent, RewindSnapshot interfaces
 │   │   ├── skill.ts              ← SkillData, SkillFile interfaces
+│   │   ├── mcp.ts                ← McpServerData, McpTool, McpEnvVar interfaces
 │   │   └── global.d.ts          ← Window.gridwatchAPI declarations
 │   ├── App.tsx                   ← shell, sidebar (sidebarTop/sidebarBottom), auto-refresh, PageErrorBoundary
 │   ├── App.module.css
@@ -122,6 +123,16 @@ gridwatch/
 
 **Guards:** archive and delete refuse if `updatedAt` is within 2 minutes of now (active session protection).
 
+### MCP IPC
+
+| Method | IPC channel | Description |
+|---|---|---|
+| `getMcpServers()` | `mcp:get-servers` | Returns `McpServerData[]` with tools queried via JSON-RPC for local servers |
+| `toggleMcpServer(name)` | `mcp:toggle-server` | Moves server between `mcp-config.json` and `gridwatch-mcp-disabled.json` |
+| `showMcpConfig()` | `mcp:show-config` | Reveals `mcp-config.json` in Finder/Explorer |
+
+**MCP tool discovery:** Local servers are spawned briefly and queried via JSON-RPC `initialize` + `tools/list` to get canonical tool names, descriptions, and input schemas. Results are cached to `~/.copilot/gridwatch-mcp-tools-cache.json` (5 min in-memory TTL, persistent on disk). Remote/IDE servers fall back to log-based tool name extraction (no descriptions).
+
 ---
 
 ## SkillData type
@@ -146,6 +157,31 @@ interface SkillFile {
   path: string              // full path
   size: number
   modifiedAt: string
+}
+```
+
+---
+
+## McpServerData type
+
+```typescript
+interface McpTool {
+  name: string              // tool identifier (e.g. "confluence_search")
+  description?: string      // human-readable description from tools/list
+  inputSchema?: Record<string, unknown>  // JSON Schema for parameters
+}
+
+interface McpServerData {
+  name: string              // server name from config or logs
+  type: 'local' | 'remote'
+  command?: string          // local: command to spawn
+  args?: string[]           // local: command arguments
+  url?: string              // remote: HTTP endpoint
+  envVars: McpEnvVar[]      // env vars (with secret detection)
+  toolCount?: number
+  tools: McpTool[]          // queried via JSON-RPC for local, log-scraped for remote
+  connectionTime?: number   // ms, from most recent log
+  enabled: boolean          // false if in gridwatch-mcp-disabled.json
 }
 ```
 
