@@ -41,39 +41,51 @@ GridWatch reads the local session data written by [GitHub Copilot CLI](https://g
 ## 📸 Screenshots
 
 ### Sessions
+
 ![Sessions](public/images/screenshot-sessions.png)
 
 ### Tokens
+
 ![Tokens](public/images/screenshot-tokens.png)
 
 ### Skills
+
 ![Skills](public/images/screenshot-skills.png)
 
 ### MCP Servers
+
 ![MCP Servers](public/images/screenshot-mcp.png)
 
 ### Activity
+
 ![Activity](public/images/screenshot-activity.png)
 
 ### Insights
+
 ![Insights](public/images/screenshot-insights.png)
 
 ### Transfer
+
 ![Transfer](public/images/screenshot-transfer.png)
 
 ### Settings
+
 ![Settings](public/images/screenshot-settings.png)
+
+### Programs Theme
+
+![Programs Theme](public/images/screenshot-theme.png)
 
 ---
 
 ## 📋 Prerequisites
 
-| Requirement | Version |
-|---|---|
-| Node.js | 18+ |
-| npm | 9+ |
+| Requirement        | Version                                                |
+| ------------------ | ------------------------------------------------------ |
+| Node.js            | 18+                                                    |
+| npm                | 9+                                                     |
 | GitHub Copilot CLI | Any version that writes to `~/.copilot/session-state/` |
-| macOS / Windows | 10+ |
+| macOS / Windows    | 10+                                                    |
 
 ---
 
@@ -167,23 +179,23 @@ npm run pack:all     # Build for all platforms
 
 GridWatch reads exclusively from local files — no network requests are made except to check for updates and (optionally) to call the GitHub Models API for AI Insights.
 
-| Data | Source |
-|---|---|
-| Session metadata | `~/.copilot/session-state/<uuid>/workspace.yaml` |
-| Prompt history | `~/.copilot/session-state/<uuid>/events.jsonl` |
-| Rewind snapshots | `~/.copilot/session-state/<uuid>/rewind-snapshots/index.json` |
-| Research reports | `~/.copilot/session-state/<uuid>/research/*.md` |
-| Token usage & compaction | `~/.copilot/logs/process-<timestamp>-<pid>.log` |
-| Archived sessions | `~/.copilot/session-state-archived/<uuid>/` (moved here by GridWatch archive) |
-| Session tags / custom data | `~/.copilot/session-state/<uuid>/gridwatch.json` (written by GridWatch) |
-| Skill tags / custom data | `~/.copilot/skills/<name>/gridwatch.json` (written by GridWatch) |
-| Copilot skills | `~/.copilot/skills/<name>/SKILL.md` (read/write for skill management) |
-| MCP server config | `~/.copilot/mcp-config.json` (local MCP server definitions, read/write for enable/disable toggle) |
-| Disabled MCP servers | `~/.copilot/gridwatch-mcp-disabled.json` (written by GridWatch when servers are toggled off) |
-| MCP tool discovery | MCP servers queried directly via JSON-RPC `tools/list` (spawns each local server briefly); results cached to `~/.copilot/gridwatch-mcp-tools-cache.json` |
-| Disabled skills | `~/.copilot/skills-disabled/<name>/` (moved here when toggled off) |
-| Encrypted API token | `~/.copilot/gridwatch-token.enc` (encrypted via OS keychain) |
-| Update check | `api.github.com/repos/faesel/gridwatch/releases/latest` (on startup only) |
+| Data                       | Source                                                                                                                                                   |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session metadata           | `~/.copilot/session-state/<uuid>/workspace.yaml`                                                                                                         |
+| Prompt history             | `~/.copilot/session-state/<uuid>/events.jsonl`                                                                                                           |
+| Rewind snapshots           | `~/.copilot/session-state/<uuid>/rewind-snapshots/index.json`                                                                                            |
+| Research reports           | `~/.copilot/session-state/<uuid>/research/*.md`                                                                                                          |
+| Token usage & compaction   | `~/.copilot/logs/process-<timestamp>-<pid>.log`                                                                                                          |
+| Archived sessions          | `~/.copilot/session-state-archived/<uuid>/` (moved here by GridWatch archive)                                                                            |
+| Session tags / custom data | `~/.copilot/session-state/<uuid>/gridwatch.json` (written by GridWatch)                                                                                  |
+| Skill tags / custom data   | `~/.copilot/skills/<name>/gridwatch.json` (written by GridWatch)                                                                                         |
+| Copilot skills             | `~/.copilot/skills/<name>/SKILL.md` (read/write for skill management)                                                                                    |
+| MCP server config          | `~/.copilot/mcp-config.json` (local MCP server definitions, read/write for enable/disable toggle)                                                        |
+| Disabled MCP servers       | `~/.copilot/gridwatch-mcp-disabled.json` (written by GridWatch when servers are toggled off)                                                             |
+| MCP tool discovery         | MCP servers queried directly via JSON-RPC `tools/list` (spawns each local server briefly); results cached to `~/.copilot/gridwatch-mcp-tools-cache.json` |
+| Disabled skills            | `~/.copilot/skills-disabled/<name>/` (moved here when toggled off)                                                                                       |
+| Encrypted API token        | `~/.copilot/gridwatch-token.enc` (encrypted via OS keychain)                                                                                             |
+| Update check               | `api.github.com/repos/faesel/gridwatch/releases/latest` (on startup only)                                                                                |
 
 ### 🔒 Security
 
@@ -197,29 +209,27 @@ GridWatch reads exclusively from local files — no network requests are made ex
 
 ### ⚙️ Tech stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Electron |
-| UI | React 19 + TypeScript |
-| Build | Vite + vite-plugin-electron |
-| Packaging | electron-builder |
-| Styling | CSS Modules + CSS custom properties |
-| Charts | Recharts |
-| Markdown rendering | marked |
-| YAML parsing | js-yaml |
-| Font | JetBrains Mono (@fontsource) |
+| Layer              | Technology                          |
+| ------------------ | ----------------------------------- |
+| Framework          | Electron                            |
+| UI                 | React 19 + TypeScript               |
+| Build              | Vite + vite-plugin-electron         |
+| Packaging          | electron-builder                    |
+| Styling            | CSS Modules + CSS custom properties |
+| Charts             | Recharts                            |
+| Markdown rendering | marked                              |
+| YAML parsing       | js-yaml                             |
+| Font               | JetBrains Mono (@fontsource)        |
 
 ### 🎨 Design system
 
 The Tron-inspired colour palette is defined as CSS custom properties in `src/index.css`:
 
 ```css
---tron-bg:        #060a14   /* near-black background */
---tron-panel:     #0a0e1f   /* panel/card background */
---tron-cyan:      #00f5ff   /* primary accent */
---tron-blue:      #0080ff   /* secondary accent */
---tron-orange:    #ff6600   /* destructive / highlight */
---tron-border:    #1a2a4a   /* border colour */
+--tron-bg: #060a14 /* near-black background */ --tron-panel: #0a0e1f
+  /* panel/card background */ --tron-cyan: #00f5ff /* primary accent */
+  --tron-blue: #0080ff /* secondary accent */ --tron-orange: #ff6600
+  /* destructive / highlight */ --tron-border: #1a2a4a /* border colour */;
 ```
 
 ---
@@ -247,12 +257,14 @@ git tag "v$VERSION" && git push origin "v$VERSION"
 ```
 
 The release workflow will:
+
 1. Create a GitHub Release with auto-generated release notes
 2. Build a `.dmg` for macOS (arm64 + x64) in parallel
 3. Build an `.exe` NSIS installer for Windows (x64) in parallel
 4. Upload both artifacts to the release
 
 **If you forget to bump first**, you can fix it by bumping the version, committing, then force-updating the tag:
+
 ```bash
 npm version <correct-version> --no-git-tag-version
 git add package.json package-lock.json
