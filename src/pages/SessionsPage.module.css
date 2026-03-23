@@ -1172,3 +1172,37 @@
 .compactionSaved {
   color: var(--tron-cyan);
 }
+
+.compactionToggle {
+  display: inline-block;
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-cyan);
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  font-family: inherit;
+  padding: 2px 8px;
+  margin-top: 6px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.compactionToggle:hover {
+  background: rgba(0, 245, 255, 0.08);
+  border-color: var(--tron-cyan);
+}
+
+.compactionContent {
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text);
+  font-size: calc(10 * var(--font-scale, 1) * 1px);
+  font-family: inherit;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}

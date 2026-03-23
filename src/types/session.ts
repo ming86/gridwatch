@@ -12,6 +12,7 @@ export interface CompactionEvent {
   newMessages?: number;
   tokensSaved?: number;
   summary?: string;
+  checkpointContent?: string;
 }
 
 export interface RewindSnapshot {

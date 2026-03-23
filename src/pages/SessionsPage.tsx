@@ -86,6 +86,7 @@ function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [copiedTransfer, setCopiedTransfer] = useState<string | null>(null)
   const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set())
   const [overflowingMsgs, setOverflowingMsgs] = useState<Set<string>>(new Set())
+  const [expandedCompactions, setExpandedCompactions] = useState<Set<number>>(new Set())
   const msgRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const measureOverflow = useCallback((key: string, el: HTMLDivElement | null) => {
@@ -126,6 +127,7 @@ function SessionsPage({ sessions, onSessionRenamed }: Props) {
     setTransferContent(null)
     setExpandedMsgs(new Set())
     setOverflowingMsgs(new Set())
+    setExpandedCompactions(new Set())
     setSessionDetail(null)
     if (selectedSession) {
       window.gridwatchAPI.listTransfers(selectedSession.id).then(setTransfers)
@@ -701,28 +703,49 @@ function SessionsPage({ sessions, onSessionRenamed }: Props) {
                 COMPACTIONS ({sessionDetail!.compactions.length})
               </div>
               <div className={styles.compactionList}>
-                {sessionDetail!.compactions.map((c, i) => (
-                  <div key={i} className={styles.compactionItem}>
-                    <div className={styles.compactionHeader}>
-                      <span className={styles.compactionTime}>
-                        {new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className={styles.compactionTrigger}>
-                        {c.triggerUtilisation > 0 ? `${c.triggerUtilisation.toFixed(1)}%` : '—'}
-                        {c.forced && <span className={styles.compactionForced}> FORCED</span>}
-                      </span>
-                    </div>
-                    {c.summary && (
-                      <div className={styles.compactionSummary}>{c.summary}</div>
-                    )}
-                    {c.tokensSaved != null && (
-                      <div className={styles.compactionStats}>
-                        <span>{c.messagesReplaced} msgs → {c.newMessages} summary</span>
-                        <span className={styles.compactionSaved}>−{c.tokensSaved.toLocaleString()} tokens</span>
+                {sessionDetail!.compactions.map((c, i) => {
+                  const isExpanded = expandedCompactions.has(i)
+                  return (
+                    <div key={i} className={styles.compactionItem}>
+                      <div className={styles.compactionHeader}>
+                        <span className={styles.compactionTime}>
+                          {new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <span className={styles.compactionTrigger}>
+                          {c.triggerUtilisation > 0 ? `${c.triggerUtilisation.toFixed(1)}%` : '—'}
+                          {c.forced && <span className={styles.compactionForced}> FORCED</span>}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {c.summary && (
+                        <div className={styles.compactionSummary}>{c.summary}</div>
+                      )}
+                      {c.tokensSaved != null && (
+                        <div className={styles.compactionStats}>
+                          <span>{c.messagesReplaced} msgs → {c.newMessages} summary</span>
+                          <span className={styles.compactionSaved}>−{c.tokensSaved.toLocaleString()} tokens</span>
+                        </div>
+                      )}
+                      {c.checkpointContent && (
+                        <>
+                          <button
+                            className={styles.compactionToggle}
+                            onClick={() => setExpandedCompactions(prev => {
+                              const next = new Set(prev)
+                              if (next.has(i)) next.delete(i)
+                              else next.add(i)
+                              return next
+                            })}
+                          >
+                            {isExpanded ? '▾ Hide checkpoint' : '▸ Show checkpoint'}
+                          </button>
+                          {isExpanded && (
+                            <pre className={styles.compactionContent}>{c.checkpointContent}</pre>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

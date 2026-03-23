@@ -393,6 +393,23 @@ async function loadAllSessions(): Promise<SessionData[]> {
           ? readLogTokenHistory(logDir, createdAt)
           : { tokenHistory: [], peakTokens: 0, peakUtilisation: 0, compactions: [] }
 
+        // Attach checkpoint markdown content to compaction events
+        const checkpointsDir = path.join(sessionDir, 'checkpoints')
+        if (compactions.length > 0 && fs.existsSync(checkpointsDir)) {
+          try {
+            const cpFiles = fs.readdirSync(checkpointsDir)
+              .filter(f => f.endsWith('.md') && f !== 'index.md')
+              .sort()
+            for (let ci = 0; ci < compactions.length && ci < cpFiles.length; ci++) {
+              try {
+                compactions[ci].checkpointContent = fs.readFileSync(
+                  path.join(checkpointsDir, cpFiles[ci]), 'utf-8'
+                )
+              } catch { /* skip unreadable files */ }
+            }
+          } catch { /* ignore missing/unreadable checkpoints dir */ }
+        }
+
         // Detect research sessions
         const firstUserMsg = userMessages[0]?.content ?? ''
         const isResearch = firstUserMsg.startsWith('Researching: ')
