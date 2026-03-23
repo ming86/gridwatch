@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import styles from './SettingsPage.module.css'
 
 export interface AppSettings {
@@ -80,7 +80,7 @@ interface Props {
   onChange: (s: AppSettings) => void
 }
 
-export default function SettingsPage({ settings, onChange }: Props) {
+function SettingsPage({ settings, onChange }: Props) {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
 
@@ -240,3 +240,5 @@ export default function SettingsPage({ settings, onChange }: Props) {
     </div>
   )
 }
+
+export default memo(SettingsPage)

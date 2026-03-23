@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { marked } from 'marked'
 import type { SkillData } from '../types/skill'
 import styles from './SkillsPage.module.css'
@@ -10,7 +10,7 @@ function stripFrontmatter(raw: string): string {
 
 type DialogMode = 'create' | 'rename-folder' | 'duplicate' | 'delete' | null
 
-export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
+function SkillsPage({ refreshKey }: { refreshKey?: number }) {
   const [skills, setSkills] = useState<SkillData[]>([])
   const [selected, setSelected] = useState<SkillData | null>(null)
   const [search, setSearch] = useState('')
@@ -583,3 +583,5 @@ export default function SkillsPage({ refreshKey }: { refreshKey?: number }) {
     </div>
   )
 }
+
+export default memo(SkillsPage)

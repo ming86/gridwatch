@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import type { SessionData } from '../types/session'
 import styles from './SessionsPage.module.css'
 
 const PAGE_SIZE = 20
+const SEARCH_DEBOUNCE_MS = 250
 
 interface Props {
   sessions: SessionData[]
@@ -58,9 +59,12 @@ function basename(p: string): string {
   return p ? p.split('/').pop() || p : ''
 }
 
-export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
+const TYPE_FILTERS = ['all', 'research', 'review', 'coding'] as const
+
+function SessionsPage({ sessions, onSessionRenamed }: Props) {
   const [selectedSession, setSelectedSession] = useState<SessionData | null>(null)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
   const [showTagFilter, setShowTagFilter] = useState(false)
   const [typeFilter, setTypeFilter] = useState<'all' | 'research' | 'review' | 'coding'>('all')
@@ -104,6 +108,12 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     }
   }, [])
 
+  // Debounce search input to avoid recomputing filters on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [search])
+
   // Sync localTags, localNotes, and transfers when selected session changes
   useEffect(() => {
     setLocalTags(selectedSession?.tags ?? [])
@@ -120,11 +130,12 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
   }, [selectedSession?.id])
 
   // Keep selectedSession in sync when sessions prop updates (e.g. after rename)
+  const selectedIdRef = useRef(selectedSession?.id)
+  selectedIdRef.current = selectedSession?.id
   useEffect(() => {
-    if (selectedSession) {
-      const updated = sessions.find(s => s.id === selectedSession.id)
-      if (updated && updated.updatedAt !== selectedSession.updatedAt) setSelectedSession(updated)
-    }
+    if (!selectedIdRef.current) return
+    const updated = sessions.find(s => s.id === selectedIdRef.current)
+    if (updated && updated.updatedAt !== selectedSession?.updatedAt) setSelectedSession(updated)
   }, [sessions])
 
   const startRename = () => {
@@ -248,8 +259,8 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
         if (!sessionTags.includes(tag)) return false
       }
     }
-    if (!search) return true
-    const q = search.toLowerCase()
+    if (!debouncedSearch) return true
+    const q = debouncedSearch.toLowerCase()
     return (
       (s.summary || '').toLowerCase().includes(q) ||
       (s.repository || '').toLowerCase().includes(q) ||
@@ -257,13 +268,13 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
       (s.branch || '').toLowerCase().includes(q) ||
       (s.tags ?? []).some((t) => t.toLowerCase().includes(q))
     )
-  }), [sessions, selectedTags, search, typeFilter])
+  }), [sessions, selectedTags, debouncedSearch, typeFilter])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const paginated = useMemo(() => filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [filtered, page])
 
   // Reset to first page when search or filter changes
-  useEffect(() => { setPage(0) }, [search, selectedTags, typeFilter])
+  useEffect(() => { setPage(0) }, [debouncedSearch, selectedTags, typeFilter])
 
   const totalCount = sessions.length
   const todayCount = useMemo(() => sessions.filter((s) => isToday(s.createdAt)).length, [sessions])
@@ -280,6 +291,16 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     if (status === 'today') return 'TODAY'
     return 'OLDER'
   }
+
+  // Memoise derived arrays for the detail panel to avoid re-creation on every render
+  const reversedMessages = useMemo(
+    () => selectedSession ? [...selectedSession.userMessages].reverse() : [],
+    [selectedSession?.userMessages]
+  )
+  const visibleFiles = useMemo(
+    () => selectedSession ? selectedSession.filesModified.slice(0, 20) : [],
+    [selectedSession?.filesModified]
+  )
 
   return (
     <div className={styles.page}>
@@ -304,7 +325,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
             </button>
           )}
           <div className={styles.typeFilter}>
-            {(['all', 'research', 'review', 'coding'] as const).map((t) => (
+            {TYPE_FILTERS.map((t) => (
               <button
                 key={t}
                 className={`${styles.typeFilterBtn} ${typeFilter === t ? styles.typeFilterBtnActive : ''}`}
@@ -748,7 +769,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                 PROMPT HISTORY ({selectedSession.userMessages.length})
                 <span className={styles.infoTip} data-tip="Every message you typed in this session, parsed from events.jsonl. Shown newest first.">ⓘ</span>
               </div>
-              {[...selectedSession.userMessages].reverse().map((msg, i) => {
+              {reversedMessages.map((msg, i) => {
                 const key = `prompt-${i}`
                 const isExpanded = expandedMsgs.has(key)
                 return (
@@ -854,7 +875,7 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
                   data-tip="Source files created or edited by Copilot during this session, tracked via rewind snapshots."
                 > ⓘ</span>
               </div>
-              {selectedSession.filesModified.slice(0, 20).map((f, i) => (
+              {visibleFiles.map((f, i) => (
                 <div key={i} className={styles.fileItem}>
                   <span className={styles.fileName}>{basename(f)}</span>
                   <span className={styles.filePath}> {f}</span>
@@ -877,3 +898,5 @@ export default function SessionsPage({ sessions, onSessionRenamed }: Props) {
     </div>
   )
 }
+
+export default memo(SessionsPage)

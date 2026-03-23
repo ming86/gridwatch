@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import type { McpServerData, McpTool } from '../types/mcp'
 import styles from './McpPage.module.css'
 
@@ -25,7 +25,7 @@ function displayName(tool: McpTool): string {
   return humanise(sep > 0 ? tool.name.slice(sep + 1) : tool.name)
 }
 
-export default function McpPage({ refreshKey }: { refreshKey?: number }) {
+function McpPage({ refreshKey }: { refreshKey?: number }) {
   const [servers, setServers] = useState<McpServerData[]>([])
   const [selected, setSelected] = useState<McpServerData | null>(null)
   const [search, setSearch] = useState('')
@@ -347,3 +347,5 @@ export default function McpPage({ refreshKey }: { refreshKey?: number }) {
     </div>
   )
 }
+
+export default memo(McpPage)
