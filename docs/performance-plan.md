@@ -12,7 +12,7 @@ Address performance in three layers — **main process** (data loading and IPC),
 
 ## Tasks
 
-### Phase 1 — Quick Wins (Renderer)
+### Phase 1 — Quick Wins (Renderer) ✅ COMPLETE
 
 #### 1. Wrap SessionsPage and SkillsPage in React.memo
 
@@ -54,7 +54,7 @@ The `useEffect` that syncs the selected session re-runs on every `sessions` arra
 
 ---
 
-### Phase 2 — IPC and Data Layer
+### Phase 2 — IPC and Data Layer ✅ COMPLETE
 
 #### 5. Implement delta/diff-based session refresh
 
