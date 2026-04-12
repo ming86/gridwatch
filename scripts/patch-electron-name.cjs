@@ -36,8 +36,7 @@ try {
     ' -kill -r -domain local -domain system -domain user',
     { stdio: 'ignore' },
   )
-  execSync('killall Dock', { stdio: 'ignore' })
-  console.log('patch-electron-name: Launch Services cache flushed, Dock restarted')
+  console.log('patch-electron-name: Launch Services cache flushed')
 } catch {
   // Non-macOS or permission issue — safe to ignore
 }

@@ -941,8 +941,8 @@ function checkForUpdate(): Promise<{ hasUpdate: boolean; latestVersion?: string;
 ipcMain.handle('app:check-for-update', async () => checkForUpdate())
 
 ipcMain.handle('app:open-external', async (_e, url: string) => {
-  if (typeof url !== 'string' || !(url.startsWith('https://') || url.startsWith('http://'))) {
-    throw new Error('Only HTTP(S) URLs are allowed')
+  if (typeof url !== 'string' || !url.startsWith('https://')) {
+    throw new Error('Only HTTPS URLs are allowed')
   }
   await shell.openExternal(url)
 })

@@ -281,7 +281,10 @@ function SkillsPage({ refreshKey }: { refreshKey?: number }) {
 
   const renderMarkdown = (raw: string) => {
     const body = stripFrontmatter(raw)
-    const html = DOMPurify.sanitize(marked.parse(body, { async: false }) as string)
+    const html = DOMPurify.sanitize(marked.parse(body, { async: false }) as string, {
+      FORBID_TAGS: ['style', 'iframe', 'form', 'input', 'textarea', 'select', 'button'],
+      FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick'],
+    })
     return <div className={styles.markdownView} dangerouslySetInnerHTML={{ __html: html }} />
   }
 
