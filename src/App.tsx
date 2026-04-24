@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'tokens', label: 'TOKENS', icon: '◬' },
   { id: 'activity', label: 'ACTIVITY', icon: '◫' },
   { id: 'skills', label: 'SKILLS', icon: '✦' },
-  { id: 'mcp', label: 'MCP', icon: '◈' },
+  { id: 'mcp', label: 'MCP', icon: '⧈' },
   { id: 'lsp', label: 'LSP', icon: '⬡' },
   { id: 'agents', label: 'AGENTS', icon: '◎' },
   { id: 'insights', label: 'INSIGHTS', icon: '⚡' },
