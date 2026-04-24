@@ -954,6 +954,37 @@ ipcMain.handle('app:show-in-folder', async (_e, filePath: string) => {
   shell.showItemInFolder(filePath)
 })
 
+ipcMain.handle('app:open-item-folder', async (_e, type: string, name: string) => {
+  const copilotBase = path.join(os.homedir(), '.copilot')
+  let target: string
+  switch (type) {
+    case 'session':
+      target = path.join(copilotBase, 'session-state', name)
+      break
+    case 'skill': {
+      const enabled = path.join(copilotBase, 'skills', name)
+      const disabled = path.join(copilotBase, 'skills-disabled', name)
+      target = fs.existsSync(enabled) ? enabled : disabled
+      break
+    }
+    case 'mcp':
+      target = path.join(copilotBase, 'mcp-config.json')
+      break
+    case 'agent':
+      target = path.join(copilotBase, 'agents', `${name}.agent.md`)
+      break
+    default:
+      throw new Error(`Unknown item type: ${type}`)
+  }
+  if (!isPathWithin(target, copilotBase)) throw new Error('Path outside allowed directory')
+  if (type === 'mcp' || type === 'agent') {
+    shell.showItemInFolder(target)
+  } else {
+    const err = await shell.openPath(target)
+    if (err) throw new Error(err)
+  }
+})
+
 // ── IPC: window controls ───────────────────────────────────────────────────────
 
 ipcMain.handle('app:get-platform', () => process.platform)

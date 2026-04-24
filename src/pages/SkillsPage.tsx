@@ -380,7 +380,15 @@ function SkillsPage({ refreshKey }: { refreshKey?: number }) {
       {selected && (
         <div className={styles.detailColumn}>
           <div className={styles.detailHeader}>
-            <div className={styles.detailTitle}>{selected.displayName}</div>
+            <div className={styles.detailTitleRow}>
+              <div className={styles.detailTitle}>{selected.displayName}</div>
+              <button
+                className={styles.openFolderBtn}
+                onClick={() => void window.gridwatchAPI.openItemFolder('skill', selected.name).catch(() => {})}
+                title="Open skill folder"
+                aria-label="Open skill folder"
+              >⊞</button>
+            </div>
             {selected.description && (
               <div className={styles.detailDesc}>{selected.description}</div>
             )}

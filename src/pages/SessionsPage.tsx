@@ -482,6 +482,12 @@ function SessionsPage({ sessions, onSessionRenamed }: Props) {
                   )}
                 </div>
                 <div className={styles.detailActions}>
+                  <button
+                    className={styles.openFolderBtn}
+                    onClick={() => void window.gridwatchAPI.openItemFolder('session', selectedSession.id).catch(() => {})}
+                    title="Open session folder"
+                    aria-label="Open session folder"
+                  >⊞</button>
                   <button className={styles.renameBtn} onClick={startRename} title="Rename session">✎</button>
                   <button className={styles.archiveBtn} onClick={() => { setConfirm('archive'); setActionError(null) }} title="Archive session">⊟</button>
                   <button className={styles.deleteBtn} onClick={() => { setConfirm('delete'); setActionError(null) }} title="Delete session">⊗</button>

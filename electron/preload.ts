@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('gridwatchAPI', {
   checkForUpdate: () => ipcRenderer.invoke('app:check-for-update'),
   openExternal: (url: string) => ipcRenderer.invoke('app:open-external', url),
   showInFolder: (filePath: string) => ipcRenderer.invoke('app:show-in-folder', filePath),
+  openItemFolder: (type: string, name: string) => ipcRenderer.invoke('app:open-item-folder', type, name),
   saveToken: (token: string) => ipcRenderer.invoke('app:save-token', token),
   hasToken: () => ipcRenderer.invoke('app:has-token'),
   analyseSession: (messages: string[]) =>

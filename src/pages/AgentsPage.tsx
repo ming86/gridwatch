@@ -268,6 +268,14 @@ function AgentsPage({ sessions, refreshKey }: AgentsPageProps) {
               <span className={`${styles.typeBadge} ${styles[`badge_${displayedAgent.badge}`]}`}>
                 {badgeLabel(displayedAgent.badge)}
               </span>
+              {displayedAgent.kind === 'custom' && (
+                <button
+                  className={styles.openFolderBtn}
+                  onClick={() => void window.gridwatchAPI.openItemFolder('agent', displayedAgent.data.name).catch(() => {})}
+                  title="Open agent file"
+                  aria-label="Open agent file location"
+                >⊞</button>
+              )}
             </div>
 
             <div className={styles.description}>{displayedAgent.description}</div>

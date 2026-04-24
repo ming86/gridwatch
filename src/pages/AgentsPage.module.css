@@ -145,6 +145,24 @@
   letter-spacing: 1px;
 }
 
+.openFolderBtn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--tron-border);
+  color: var(--tron-text-dim);
+  cursor: pointer;
+  font-size: calc(14 * var(--font-scale, 1) * 1px);
+  padding: 2px 8px;
+  font-family: inherit;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.openFolderBtn:hover {
+  border-color: var(--tron-yellow);
+  color: var(--tron-yellow);
+}
+
 .description {
   font-size: calc(11 * var(--font-scale, 1) * 1px);
   color: var(--tron-text-dim);

@@ -177,6 +177,12 @@ function McpPage({ refreshKey }: { refreshKey?: number }) {
                 {selected.type.toUpperCase()}
               </span>
               {!selected.enabled && <span className={styles.disabledBadge}>DISABLED</span>}
+              <button
+                className={styles.openFolderBtn}
+                onClick={() => void window.gridwatchAPI.openItemFolder('mcp', selected.name).catch(() => {})}
+                title="Open MCP config"
+                aria-label="Open MCP config file location"
+              >⊞</button>
             </div>
 
             {selected.type === 'local' && (
